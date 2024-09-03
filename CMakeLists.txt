@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(anariVolumeViewer LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -76,4 +76,14 @@ if (USE_VTK)
   endif()
 
   target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES})
+endif()
+
+option(USE_ITK "Support loading Nifti files from ITK" OFF)
+if (USE_ITK)
+  find_package(ITK CONFIG REQUIRED)
+  include(${ITK_USE_FILE})
+  include_directories(${ITK_INCLUDE_DIRS})
+  target_sources(${PROJECT_NAME} PRIVATE readNifti.cpp)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE -DHAVE_ITK)
+  target_link_libraries(${PROJECT_NAME} ${ITK_LIBRARIES})
 endif()

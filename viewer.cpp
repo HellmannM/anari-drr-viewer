@@ -27,6 +27,9 @@
 #ifdef HAVE_UMESH
 #include "readUMesh.h"
 #endif
+#ifdef HAVE_ITK
+#include "readNifti.h"
+#endif
 
 static const bool g_true = true;
 static bool g_verbose = false;
@@ -102,6 +105,9 @@ struct AppState
 #endif
 #ifdef HAVE_UMESH
   UMeshReader umeshReader;
+#endif
+#ifdef HAVE_ITK
+  NiftiReader niftiReader;
 #endif
   RAWReader rawReader;
 };
@@ -491,6 +497,54 @@ class Application : public anari_viewer::Application
             data.gridDomains.data(),
             data.gridDomains.size());
       }
+
+      anari::commitParameters(device, field);
+      m_state.field = field;
+
+      g_voxelRange[0] = data.dataRange.x;
+      g_voxelRange[1] = data.dataRange.y;
+    }
+#endif
+#ifdef HAVE_ITK
+    else if (m_state.niftiReader.open(g_filename.c_str())) {
+      m_state.sdata = m_state.niftiReader.getField(0);
+      auto &data = m_state.sdata;
+
+      auto field =
+          anari::newObject<anari::SpatialField>(device, "structuredRegular");
+
+      anari::Array3D scalar;
+      if (data.bytesPerCell == 1) {
+        scalar = anariNewArray3D(device,
+            data.dataUI8.data(),
+            0,
+            0,
+            ANARI_UFIXED8,
+            g_dimX,
+            g_dimY,
+            g_dimZ);
+      } else if (data.bytesPerCell == 2) {
+        scalar = anariNewArray3D(device,
+            data.dataUI16.data(),
+            0,
+            0,
+            ANARI_UFIXED16,
+            g_dimX,
+            g_dimY,
+            g_dimZ);
+      } else if (data.bytesPerCell == 4) {
+        scalar = anariNewArray3D(device,
+            data.dataF32.data(),
+            0,
+            0,
+            ANARI_FLOAT32,
+            g_dimX,
+            g_dimY,
+            g_dimZ);
+      }
+
+      anari::setAndReleaseParameter(device, field, "data", scalar);
+      anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
 
       anari::commitParameters(device, field);
       m_state.field = field;
