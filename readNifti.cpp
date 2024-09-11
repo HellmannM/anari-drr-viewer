@@ -6,6 +6,7 @@
 #include <vector>
 // ITK
 #include <itkImageFileReader.h>
+#include "itkImageRegionIterator.h"
 // ours
 #include "attenuation.h"
 #include "FieldTypes.h"
@@ -29,31 +30,36 @@ bool NiftiReader::open(const char *fileName)
   field.dimZ = reader->GetImageIO()->GetDimensions(2);
   field.bytesPerCell = sizeof(float);
 
+  std::cout << "dimX=" << field.dimX << "\n";
+  std::cout << "dimY=" << field.dimY << "\n";
+  std::cout << "dimZ=" << field.dimZ << "\n";
+  std::cout << "size=" << (size_t)field.dimX * field.dimY * field.dimZ * sizeof(float) << "\n";
+
   return true;
 }
 
 const StructuredField& NiftiReader::getField(int index)
 {
   if (field.empty()) {
-
     // transform from ct density to linear attenuation coefficient
     std::cout << "Transforming density values to linear attenuation coefficients\n";
-    std::vector<float> attenuation_volume(field.dimX * field.dimY * field.dimZ);
-    for (unsigned x=0; x<field.dimX; ++x)
+    std::cout << "\tcopy to buffer\n";
+    using voxel_value_type = int16_t; //TODO
+    std::vector<voxel_value_type> buffer;
+    itk::ImageRegionConstIterator<img_t> inputIterator(img, img->GetLargestPossibleRegion());
+    while (!inputIterator.IsAtEnd())
     {
-      for (unsigned y=0; y<field.dimX; ++y)
-      {
-        for (unsigned z=0; z<field.dimZ; ++z)
-        {
-          const auto index = x + y * field.dimX + z * field.dimX * field.dimY;
-          const auto value = img->GetPixel(img_t::IndexType({x, y, z}));
-          attenuation_volume[index] = attenuation_lookup(value, tube_potential::TB13000EV);
-        }
-      }
+        buffer.push_back(inputIterator.Get());
+        ++inputIterator;
     }
-
-    size_t size = field.dimX * size_t(field.dimY) * field.dimZ * field.bytesPerCell;
+    std::cout << "\tdo LAC transformation\n";
+    std::vector<float> attenuation_volume((size_t)field.dimX * field.dimY * field.dimZ);
+    for (size_t i=0; i<buffer.size(); ++i) {
+      attenuation_volume[i] = attenuation_lookup(buffer[i], tube_potential::TB13000EV);
+    }
+    size_t size = attenuation_volume.size() * sizeof(attenuation_volume[0]);
     field.dataF32.resize(size);
+    std::cout << "\tcopy to field: size=" << size << "\n";
     memcpy((char *)field.dataF32.data(), attenuation_volume.data(), size);
 
     field.dataRange = {0.f, 3.f}; //TODO
