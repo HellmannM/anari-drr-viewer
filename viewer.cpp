@@ -520,27 +520,27 @@ class Application : public anari_viewer::Application
             0,
             0,
             ANARI_UFIXED8,
-            g_dimX,
-            g_dimY,
-            g_dimZ);
+            data.dimX,
+            data.dimY,
+            data.dimZ);
       } else if (data.bytesPerCell == 2) {
         scalar = anariNewArray3D(device,
             data.dataUI16.data(),
             0,
             0,
             ANARI_UFIXED16,
-            g_dimX,
-            g_dimY,
-            g_dimZ);
+            data.dimX,
+            data.dimY,
+            data.dimZ);
       } else if (data.bytesPerCell == 4) {
         scalar = anariNewArray3D(device,
             data.dataF32.data(),
             0,
             0,
             ANARI_FLOAT32,
-            g_dimX,
-            g_dimY,
-            g_dimZ);
+            data.dimX,
+            data.dimY,
+            data.dimZ);
       }
 
       anari::setAndReleaseParameter(device, field, "data", scalar);
