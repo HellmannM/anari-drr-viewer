@@ -19,7 +19,7 @@ bool NiftiReader::open(const char *fileName)
     return false;
   }
 
-  std::cout << "Reading Nifi file...\n";
+  std::cout << "Reading Nifi file... ";
   reader = reader_t::New();
   reader->SetFileName(fileName);
   reader->Update();
@@ -30,10 +30,7 @@ bool NiftiReader::open(const char *fileName)
   field.dimZ = reader->GetImageIO()->GetDimensions(2);
   field.bytesPerCell = sizeof(float);
 
-  std::cout << "dimX=" << field.dimX << "\n";
-  std::cout << "dimY=" << field.dimY << "\n";
-  std::cout << "dimZ=" << field.dimZ << "\n";
-  std::cout << "size=" << (size_t)field.dimX * field.dimY * field.dimZ * sizeof(float) << "\n";
+  std::cout << "[" << field.dimX << ", " << field.dimY << ", " << field.dimZ << "]\n";
 
   return true;
 }
@@ -42,8 +39,7 @@ const StructuredField& NiftiReader::getField(int index)
 {
   if (field.empty()) {
     // transform from ct density to linear attenuation coefficient
-    std::cout << "Transforming density values to linear attenuation coefficients\n";
-    std::cout << "\tcopy to buffer\n";
+    std::cout << "\tTransform density values to linear attenuation coefficients\n";
     using voxel_value_type = int16_t; //TODO
     std::vector<voxel_value_type> buffer;
     itk::ImageRegionConstIterator<img_t> inputIterator(img, img->GetLargestPossibleRegion());
@@ -52,14 +48,12 @@ const StructuredField& NiftiReader::getField(int index)
         buffer.push_back(inputIterator.Get());
         ++inputIterator;
     }
-    std::cout << "\tdo LAC transformation\n";
     std::vector<float> attenuation_volume((size_t)field.dimX * field.dimY * field.dimZ);
     for (size_t i=0; i<buffer.size(); ++i) {
       attenuation_volume[i] = attenuation_lookup(buffer[i], tube_potential::TB13000EV);
     }
     size_t size = attenuation_volume.size() * sizeof(attenuation_volume[0]);
     field.dataF32.resize(size);
-    std::cout << "\tcopy to field: size=" << size << "\n";
     memcpy((char *)field.dataF32.data(), attenuation_volume.data(), size);
 
     field.dataRange = {0.f, 3.f}; //TODO
