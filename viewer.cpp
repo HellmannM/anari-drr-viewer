@@ -1,10 +1,9 @@
-// Copyright 2023 Stefan Zellmann and Jefferson Amstutz
+// Copyright 2023 Stefan Zellmann, Jefferson Amstutz and Matthias Hellmann
 // SPDX-License-Identifier: Apache-2.0
 
 // anari_viewer
 #include "anari_viewer/Application.h"
-#include "anari_viewer/windows/LightsEditor.h"
-#include "anari_viewer/windows/Viewport.h"
+#include "Viewport.h"
 // glm
 #include "glm/gtc/matrix_transform.hpp"
 // std
@@ -15,18 +14,8 @@
 #include <sstream>
 // ours
 #include "FieldTypes.h"
-#include "ISOSurfaceEditor.h"
-#include "TransferFunctionEditor.h"
+#include "SettingsEditor.h"
 #include "readRAW.h"
-#ifdef HAVE_HDF5
-#include "readFlash.h"
-#endif
-#ifdef HAVE_VTK
-#include "readVTK.h"
-#endif
-#ifdef HAVE_UMESH
-#include "readUMesh.h"
-#endif
 #ifdef HAVE_ITK
 #include "readNifti.h"
 #endif
@@ -63,7 +52,7 @@ Size=549,813
 Collapsed=0
 DockId=0x00000002,1
 
-[Window][TF Editor]
+[Window][Settings Editor]
 Pos=0,25
 Size=549,813
 Collapsed=0
@@ -94,18 +83,7 @@ struct AppState
   anari::Device device{nullptr};
   anari::World world{nullptr};
   anari::SpatialField field{nullptr};
-  AMRField data;
-  UnstructuredField udata;
   StructuredField sdata;
-#ifdef HAVE_HDF5
-  FlashReader flashReader;
-#endif
-#ifdef HAVE_VTK
-  VTKReader vtkReader;
-#endif
-#ifdef HAVE_UMESH
-  UMeshReader umeshReader;
-#endif
 #ifdef HAVE_ITK
   NiftiReader niftiReader;
 #endif
@@ -311,200 +289,6 @@ class Application : public anari_viewer::Application
       g_voxelRange[0] = data.dataRange.x;
       g_voxelRange[1] = data.dataRange.y;
     }
-#ifdef HAVE_HDF5
-    else if (m_state.flashReader.open(g_filename.c_str())) {
-      m_state.data = m_state.flashReader.getField(0);
-      auto &data = m_state.data;
-
-      auto field = anari::newObject<anari::SpatialField>(device, "amr");
-
-      std::vector<anari::Array3D> blockDataV(data.blockData.size());
-      for (size_t i = 0; i < data.blockData.size(); ++i) {
-        blockDataV[i] = anari::newArray3D(device,
-            data.blockData[i].values.data(),
-            data.blockData[i].dims[0],
-            data.blockData[i].dims[1],
-            data.blockData[i].dims[2]);
-      }
-
-      printf("Array sizes:\n");
-      printf("    'cellWidth'  : %zu\n", data.cellWidth.size());
-      printf("    'blockBounds': %zu\n", data.blockBounds.size());
-      printf("    'blockLevel' : %zu\n", data.blockLevel.size());
-      printf("    'blockData'  : %zu\n", blockDataV.size());
-
-      anari::setParameterArray1D(device,
-          field,
-          "cellWidth",
-          ANARI_FLOAT32,
-          data.cellWidth.data(),
-          data.cellWidth.size());
-      anari::setParameterArray1D(device,
-          field,
-          "block.bounds",
-          ANARI_INT32_BOX3,
-          data.blockBounds.data(),
-          data.blockBounds.size());
-      anari::setParameterArray1D(device,
-          field,
-          "block.level",
-          ANARI_INT32,
-          data.blockLevel.data(),
-          data.blockLevel.size());
-      anari::setParameterArray1D(device,
-          field,
-          "block.data",
-          ANARI_ARRAY1D,
-          blockDataV.data(),
-          blockDataV.size());
-
-      for (auto a : blockDataV)
-        anari::release(device, a);
-
-      anari::commitParameters(device, field);
-      m_state.field = field;
-
-      g_voxelRange[0] = data.voxelRange.x;
-      g_voxelRange[1] = data.voxelRange.y;
-    }
-#endif
-#ifdef HAVE_VTK
-    else if (m_state.vtkReader.open(g_filename.c_str())) {
-      bool indexPrefixed = false;
-      m_state.udata = m_state.vtkReader.getField(0, indexPrefixed);
-      auto &data = m_state.udata;
-
-      auto field =
-          anari::newObject<anari::SpatialField>(device, "unstructured");
-
-      printf("Array sizes:\n");
-      printf("    'vertexPosition': %zu\n", data.vertexPosition.size());
-      printf("    'vertexData'    : %zu\n", data.vertexData.size());
-      printf("    'index'         : %zu\n", data.index.size());
-      printf("    'cellIndex'     : %zu\n", data.cellIndex.size());
-      printf("    'cellType'      : %zu\n", data.cellType.size());
-
-      anari::setParameterArray1D(device,
-          field,
-          "vertex.position",
-          ANARI_FLOAT32_VEC3,
-          data.vertexPosition.data(),
-          data.vertexPosition.size());
-      anari::setParameterArray1D(device,
-          field,
-          "vertex.data",
-          ANARI_FLOAT32,
-          data.vertexData.data(),
-          data.vertexData.size());
-      anari::setParameterArray1D(device,
-          field,
-          "index",
-          ANARI_UINT64,
-          data.index.data(),
-          data.index.size());
-      anari::setParameter(
-          device, field, "indexPrefixed", ANARI_BOOL, &data.indexPrefixed);
-      anari::setParameterArray1D(device,
-          field,
-          "cell.index",
-          ANARI_UINT64,
-          data.cellIndex.data(),
-          data.cellIndex.size());
-      anari::setParameterArray1D(device,
-          field,
-          "cell.type",
-          ANARI_UINT8,
-          data.cellType.data(),
-          data.cellType.size());
-
-      anari::commitParameters(device, field);
-      m_state.field = field;
-
-      g_voxelRange[0] = data.dataRange.x;
-      g_voxelRange[1] = data.dataRange.y;
-    }
-#endif
-#ifdef HAVE_UMESH
-    else if (m_state.umeshReader.open(g_filename.c_str())) {
-      m_state.udata = m_state.umeshReader.getField(0);
-      auto &data = m_state.udata;
-
-      auto field =
-          anari::newObject<anari::SpatialField>(device, "unstructured");
-
-      printf("Array sizes:\n");
-      printf("    'vertexPosition': %zu\n", data.vertexPosition.size());
-      printf("    'vertexData'    : %zu\n", data.vertexData.size());
-      printf("    'index'         : %zu\n", data.index.size());
-      printf("    'cellIndex'     : %zu\n", data.cellIndex.size());
-      printf("    'cellType'      : %zu\n", data.cellType.size());
-      printf("    'gridData'      : %zu\n", data.gridData.size());
-      printf("    'gridDomains'   : %zu\n", data.gridDomains.size());
-
-      anari::setParameterArray1D(device,
-          field,
-          "vertex.position",
-          ANARI_FLOAT32_VEC3,
-          data.vertexPosition.data(),
-          data.vertexPosition.size());
-      anari::setParameterArray1D(device,
-          field,
-          "vertex.data",
-          ANARI_FLOAT32,
-          data.vertexData.data(),
-          data.vertexData.size());
-      anari::setParameterArray1D(device,
-          field,
-          "index",
-          ANARI_UINT64,
-          data.index.data(),
-          data.index.size());
-      anari::setParameter(
-          device, field, "indexPrefixed", ANARI_BOOL, &data.indexPrefixed);
-      anari::setParameterArray1D(device,
-          field,
-          "cell.index",
-          ANARI_UINT64,
-          data.cellIndex.data(),
-          data.cellIndex.size());
-      anari::setParameterArray1D(device,
-          field,
-          "cell.type",
-          ANARI_UINT8,
-          data.cellType.data(),
-          data.cellType.size());
-
-      if (!data.gridData.empty() && !data.gridDomains.empty()) {
-        std::vector<anari::Array3D> gridDataV(data.gridData.size());
-        for (size_t i = 0; i < data.gridData.size(); ++i) {
-          gridDataV[i] = anari::newArray3D(device,
-              data.gridData[i].values.data(),
-              data.gridData[i].dims[0],
-              data.gridData[i].dims[1],
-              data.gridData[i].dims[2]);
-        }
-
-        anari::setParameterArray1D(device,
-            field,
-            "grid.data",
-            ANARI_ARRAY1D,
-            gridDataV.data(),
-            gridDataV.size());
-        anari::setParameterArray1D(device,
-            field,
-            "grid.domains",
-            ANARI_FLOAT32_BOX3,
-            data.gridDomains.data(),
-            data.gridDomains.size());
-      }
-
-      anari::commitParameters(device, field);
-      m_state.field = field;
-
-      g_voxelRange[0] = data.dataRange.x;
-      g_voxelRange[1] = data.dataRange.y;
-    }
-#endif
 #ifdef HAVE_ITK
     else if (m_state.niftiReader.open(g_filename.c_str())) {
       m_state.sdata = m_state.niftiReader.getField(0);
@@ -591,62 +375,6 @@ class Application : public anari_viewer::Application
     anari::release(device, volume);
 #endif
 
-#if 0
-    // ISO Surface geom //
-
-    auto geometry = anari::newObject<anari::Geometry>(device, "isosurface");
-    anari::setParameter(device, geometry, "field", m_state.field);
-
-    anari::commitParameters(device, geometry);
-#endif
-
-#if 0
-    // Create color map texture //
-
-    auto texelArray = anari::newArray1D(device, ANARI_FLOAT32_VEC3, 2);
-    {
-      auto *texels = anari::map<glm::vec3>(device, texelArray);
-      texels[0][0] = 1.f;
-      texels[0][1] = 0.f;
-      texels[0][2] = 0.f;
-      texels[1][0] = 0.f;
-      texels[1][1] = 1.f;
-      texels[1][2] = 0.f;
-      anari::unmap(device, texelArray);
-    }
-
-    // Map iso values from raw to [0,1]:
-    glm::vec4 inOffset(
-        -g_voxelRange[0] / (g_voxelRange[1] - g_voxelRange[0]), 0, 0, 0);
-    glm::mat4 inTransform = glm::scale(glm::mat4(1.0f),
-        glm::vec3(1.f / (g_voxelRange[1] - g_voxelRange[0]), 1.f, 1.f));
-
-    auto texture = anari::newObject<anari::Sampler>(device, "image1D");
-    anari::setAndReleaseParameter(device, texture, "image", texelArray);
-    anari::setParameter(device, texture, "inAttribute", "attribute0");
-    anari::setParameter(device, texture, "filter", "linear");
-    anari::setParameter(device, texture, "inOffset", inOffset);
-    anari::setParameter(device, texture, "inTransform", inTransform);
-    anari::commitParameters(device, texture);
-
-    // Create and parameterize material //
-
-    auto material = anari::newObject<anari::Material>(device, "matte");
-    anari::setAndReleaseParameter(device, material, "color", texture);
-    anari::commitParameters(device, material);
-
-    // Create and parameterize surface //
-
-    auto surface = anari::newObject<anari::Surface>(device);
-    anari::setAndReleaseParameter(device, surface, "geometry", geometry);
-    anari::setAndReleaseParameter(device, surface, "material", material);
-    anari::commitParameters(device, surface);
-
-    anari::setAndReleaseParameter(
-        device, m_state.world, "surface", anari::newArray1D(device, &surface));
-    anari::release(device, surface);
-#endif
-
     anari::commitParameters(device, m_state.world);
 
     // ImGui //
@@ -658,83 +386,20 @@ class Application : public anari_viewer::Application
     if (g_useDefaultLayout)
       ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
 
-    auto *viewport = new windows::Viewport(device, "Viewport");
+    auto *viewport = new windows::DRRViewport(device, "Viewport");
     viewport->setManipulator(&m_state.manipulator);
     viewport->setWorld(m_state.world);
     viewport->resetView();
 
-    auto *leditor = new windows::LightsEditor({device});
-    leditor->setWorlds({m_state.world});
-
-    auto *tfeditor = new windows::TransferFunctionEditor();
-    tfeditor->setValueRange({g_voxelRange[0], g_voxelRange[1]});
-    tfeditor->setUpdateCallback(
-        [=](const glm::vec2 &valueRange, const std::vector<glm::vec4> &co) {
-          std::vector<glm::vec3> colors(co.size());
-          std::vector<float> opacities(co.size());
-          std::transform(
-              co.begin(), co.end(), colors.begin(), [](const glm::vec4 &v) {
-                return glm::vec3(v);
-              });
-          std::transform(
-              co.begin(), co.end(), opacities.begin(), [](const glm::vec4 &v) {
-                return v.w;
-              });
-          anari::setParameterArray1D(device,
-              volume,
-              "color",
-              ANARI_FLOAT32_VEC3,
-              colors.data(),
-              colors.size());
-          anari::setParameterArray1D(device,
-              volume,
-              "opacity",
-              ANARI_FLOAT32,
-              opacities.data(),
-              opacities.size());
-          anariSetParameter(
-              device, volume, "valueRange", ANARI_FLOAT32_BOX1, &valueRange);
-
-          anari::commitParameters(device, volume);
-#if 0
-          auto texelArray =
-              anari::newArray1D(device, ANARI_FLOAT32_VEC3, colors.size());
-          {
-            auto *texels = anari::map<glm::vec3>(device, texelArray);
-            for (int i = 0; i < colors.size(); i++) {
-              texels[i] = colors[i];
-            }
-            anari::unmap(device, texelArray);
-          }
-          anari::setAndReleaseParameter(device, texture, "image", texelArray);
-          anari::commitParameters(device, texture);
-#endif
+    auto *seditor = new windows::SettingsEditor();
+    seditor->setUpdateCallback(
+        [=](const float &photonEnergy) {
+            viewport->setPhotonEnergy(photonEnergy);
         });
-
-#if 0
-    // ISO values
-    auto *isoeditor = new windows::ISOSurfaceEditor();
-    isoeditor->setValueRange({g_voxelRange[0], g_voxelRange[1]});
-    isoeditor->setUpdateCallback(
-        [=](const std::vector<float> &isoValues) {
-      anari::setAndReleaseParameter(device,
-          geometry,
-          "isovalue",
-          anari::newArray1D(device, isoValues.data(), isoValues.size()));
-
-      anari::setAndReleaseParameter(device,
-          geometry,
-          "primitive.attribute0",
-          anari::newArray1D(device, isoValues.data(), isoValues.size()));
-      anari::commitParameters(device, geometry);
-    });
-#endif
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
-    windows.emplace_back(leditor);
-    windows.emplace_back(tfeditor);
-    //  windows.emplace_back(isoeditor);
+    windows.emplace_back(seditor);
 
     return windows;
   }
@@ -750,27 +415,6 @@ class Application : public anari_viewer::Application
 
         ImGui::EndMenu();
       }
-
-#ifdef HAVE_HDF5
-      if (ImGui::BeginMenu("Volume")) {
-        ImGui::Text("METHOD:");
-        auto d = m_state.device;
-        auto f = m_state.field;
-        static int e = 0;
-        int old_e = e;
-        if (ImGui::RadioButton("current", &e, 0))
-          anari::setParameter(d, f, "method", "current");
-        if (ImGui::RadioButton("finest", &e, 1))
-          anari::setParameter(d, f, "method", "finest");
-        if (ImGui::RadioButton("octant", &e, 2))
-          anari::setParameter(d, f, "method", "octant");
-
-        if (old_e != e)
-          anari::commitParameters(d, f);
-
-        ImGui::EndMenu();
-      }
-#endif
 
       ImGui::EndMainMenuBar();
     }
@@ -799,7 +443,8 @@ static void printUsage()
             << "   [{--library|-l} <ANARI library>]\n"
             << "   [{--trace|-t} <directory>]\n"
             << "   [{--dims|-d} <dimx dimy dimz>]\n"
-            << "   [{--type|-t} [{uint8|uint16|float32}]\n";
+            << "   [{--type|-t} [{uint8|uint16|float32}]\n"
+            << "   <volume file>\n";
 }
 
 static void parseCommandLine(int argc, char *argv[])
@@ -848,6 +493,6 @@ int main(int argc, char *argv[])
     std::exit(1);
   }
   viewer::Application app;
-  app.run(1920, 1200, "ANARI Volume Viewer");
+  app.run(1920, 1200, "ANARI DRR Viewer");
   return 0;
 }
