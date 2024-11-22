@@ -41,8 +41,8 @@ class SettingsEditor : public anari_viewer::Window
   bool m_settingsChanged{true};
 
   // photon energy
-  float m_photonEnergy{13000.f};
-  float m_defaultPhotonEnergy{13000.f};
+  float m_photonEnergy{120000.f};
+  float m_defaultPhotonEnergy{120000.f};
 };
 
 } // namespace windows

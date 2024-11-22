@@ -38,7 +38,7 @@ void SettingsEditor::buildUI()
 //  ImGui::Separator();
 
   m_settingsChanged |=
-      ImGui::SliderFloat("tube potential [keV]", &m_photonEnergy, 0.f, 30000.f);
+      ImGui::SliderFloat("energy [eV]", &m_photonEnergy, 0.f, 150000.f);
 
   if (ImGui::Button("reset##energy")) {
     m_photonEnergy = m_defaultPhotonEnergy;

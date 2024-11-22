@@ -7,7 +7,8 @@ enum tube_potential
 {
     TB13000EV = 0,
     TB13500EV = 1,
-    TB14000EV = 2
+    TB14000EV = 2,
+    TB120000EV = 2
 };
 
 struct lut_entry { ssize_t density; float lac; };
@@ -75,20 +76,48 @@ std::vector<std::vector<lut_entry>> LAC_LUT = {
         {1571, 0.73834},
         {2034, 1.31508},
         {2516, 2.02}
+    },
+    { // 120000 eV
+        {-1024, 0.00},
+        {-800, 0.200},
+        {-69,  0.928},
+        {25,   1.000},
+        {49,   1.047},
+        {100,  1.073},
+        {200,  1.078},
+        {243,  1.086},
+        {261,  1.102},
+        {494,  1.278},
+        {878,  1.470},
+        {1313, 1.695},
+        {3000, 2.592}
+//        {0,    0.0},
+//        {1024-800, 0.200},
+//        {1024-69,  0.928},
+//        {1024+25,   1.000},
+//        {1024+49,   1.047},
+//        {1024+100,  1.073},
+//        {1024+200,  1.078},
+//        {1024+243,  1.086},
+//        {1024+261,  1.102},
+//        {1024+494,  1.278},
+//        {1024+878,  1.470},
+//        {1024+1313, 1.695},
+//        {1024+3000, 2.592}
     }
 };
 
 
 float attenuation_lookup(ssize_t density, tube_potential tb/*, size_t& count_below_0, size_t& count_above_2516*/) {
-    if (density < 0)
+    if (density < LAC_LUT[tb].front().density)
     {
 //        ++count_below_0;
-        density = 0;
+        density = LAC_LUT[tb].front().density;
     }
-    else if (density > 2516)
+    else if (density > LAC_LUT[tb].back().density)
     {
 //        ++count_above_2516;
-        density = 2516;
+        density = LAC_LUT[tb].back().density;
     }
     const auto pos = find_if(LAC_LUT[tb].begin(), LAC_LUT[tb].end(),
             [density](lut_entry elem){return elem.density > density;}

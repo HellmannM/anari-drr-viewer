@@ -50,7 +50,7 @@ const StructuredField& NiftiReader::getField(int index)
     }
     std::vector<float> attenuation_volume((size_t)field.dimX * field.dimY * field.dimZ);
     for (size_t i=0; i<buffer.size(); ++i) {
-      attenuation_volume[i] = attenuation_lookup(buffer[i], tube_potential::TB13000EV);
+      attenuation_volume[i] = attenuation_lookup(buffer[i], tube_potential::TB120000EV);
     }
     size_t size = attenuation_volume.size() * sizeof(attenuation_volume[0]);
     field.dataF32.resize(size);
