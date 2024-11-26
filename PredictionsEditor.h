@@ -38,6 +38,9 @@ class PredictionsEditor : public anari_viewer::Window
   bool m_predictionsChanged{false};
 
   prediction_container m_predictions;
+  anari::math::float3 m_eye;
+  anari::math::float3 m_center;
+  anari::math::float3 m_up;
 };
 
 } // namespace windows

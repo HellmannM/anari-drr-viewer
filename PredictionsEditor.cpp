@@ -44,18 +44,30 @@ void PredictionsEditor::buildUI()
   }
 
   ImGui::Separator();
+
+  for (size_t i=0; i<m_predictions.predictions.size(); ++i)
+  {
+    const auto buttonName = "Load " + std::to_string(i);
+    if (ImGui::Button(buttonName.c_str())) {
+      m_eye = m_predictions.predictions[i].eye;
+      m_center = m_predictions.predictions[i].center;
+      m_up = m_predictions.predictions[i].up;
+      m_predictionsChanged = true;
+    }
+  }
+
+  ImGui::Separator();
 }
 
 void PredictionsEditor::setUpdateCameraCallback(PredictionsUpdateCameraCallback cb)
 {
   m_updateCameraCallback = cb;
-  triggerUpdateCameraCallback();
 }
 
 void PredictionsEditor::triggerUpdateCameraCallback()
 {
-//  if (m_updateCameraCallback)
-//    m_updateCameraCallback(/*TODO*/);
+  if (m_updateCameraCallback)
+    m_updateCameraCallback(m_eye, m_center, m_up);
 }
 
 } // namespace windows
