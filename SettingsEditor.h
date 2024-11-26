@@ -3,10 +3,6 @@
 
 #pragma once
 
-// glad
-#include <glad/glad.h>
-// glm
-#include <anari/anari_cpp/ext/glm.h>
 // anari
 #include "anari_viewer/windows/Window.h"
 // std
@@ -15,9 +11,6 @@
 #include <vector>
 
 namespace windows {
-
-using ColorPoint = glm::vec4;
-using OpacityPoint = glm::vec2;
 
 using SettingsUpdateCallback =
     std::function<void(const float &)>;

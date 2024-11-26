@@ -3,10 +3,8 @@
 
 #include "SettingsEditor.h"
 // std
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <stdexcept>
+//#include <algorithm>
+//#include <vector>
 
 namespace windows {
 
