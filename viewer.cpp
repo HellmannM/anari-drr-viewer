@@ -14,8 +14,10 @@
 #include <sstream>
 // ours
 #include "FieldTypes.h"
-#include "SettingsEditor.h"
+#include "prediction.h"
+#include "PredictionsEditor.h"
 #include "readRAW.h"
+#include "SettingsEditor.h"
 #ifdef HAVE_ITK
 #include "readNifti.h"
 #endif
@@ -32,6 +34,7 @@ static std::string g_filename;
 static int g_dimX = 0, g_dimY = 0, g_dimZ = 0;
 static unsigned g_bytesPerCell = 0;
 static float g_voxelRange[2];
+static std::string g_jsonfile;
 
 static const char *g_defaultLayout =
     R"layout(
@@ -46,17 +49,17 @@ Size=889,813
 Collapsed=0
 DockId=0x00000003,0
 
-[Window][Lights Editor]
-Pos=0,25
-Size=549,813
-Collapsed=0
-DockId=0x00000002,1
-
 [Window][Settings Editor]
 Pos=0,25
 Size=549,813
 Collapsed=0
 DockId=0x00000002,0
+
+[Window][Predictions Editor]
+Pos=0,25
+Size=549,813
+Collapsed=0
+DockId=0x00000002,1
 
 [Window][Debug##Default]
 Pos=60,60
@@ -88,6 +91,7 @@ struct AppState
   NiftiReader niftiReader;
 #endif
   RAWReader rawReader;
+  prediction_container predictions;
 };
 
 static void statusFunc(const void *userData,
@@ -377,6 +381,12 @@ class Application : public anari_viewer::Application
 
     anari::commitParameters(device, m_state.world);
 
+    // Predictions from JSON //
+
+    if (!g_jsonfile.empty())
+      m_state.predictions = prediction_container(g_jsonfile);
+
+
     // ImGui //
 
     ImGuiIO &io = ImGui::GetIO();
@@ -397,9 +407,19 @@ class Application : public anari_viewer::Application
             viewport->setPhotonEnergy(photonEnergy);
         });
 
+    auto *peditor = new windows::PredictionsEditor(m_state.predictions);
+    peditor->setUpdateCameraCallback(
+        [=](const anari::math::float3 &eye, 
+            const anari::math::float3 &dir,
+            const anari::math::float3 &up)
+        {
+            //TODO viewport->setCamera(eye, dir, up);
+        });
+
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
     windows.emplace_back(seditor);
+    windows.emplace_back(peditor);
 
     return windows;
   }
@@ -480,6 +500,8 @@ static void parseCommandLine(int argc, char *argv[])
         printUsage();
         std::exit(0);
       }
+    } else if (arg == "--json" || arg == "-j") {
+      g_jsonfile = arg;
     } else
       g_filename = std::move(arg);
   }

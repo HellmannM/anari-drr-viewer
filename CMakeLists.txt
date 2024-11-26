@@ -7,7 +7,7 @@ find_package(anari 0.8.0 REQUIRED COMPONENTS viewer)
 set(SUBPROJECT_NAME anariDRRViewer)
 
 add_executable(${SUBPROJECT_NAME}
-    SettingsEditor.cpp Viewport.cpp viewer.cpp)
+    PredictionsEditor.cpp SettingsEditor.cpp Viewport.cpp viewer.cpp)
 target_link_libraries(${SUBPROJECT_NAME} glm::glm anari::anari_viewer)
 
 option(USE_ITK "Support loading Nifti files from ITK" ON)
@@ -19,3 +19,15 @@ if (USE_ITK)
   target_compile_definitions(${SUBPROJECT_NAME} PRIVATE -DHAVE_ITK)
   target_link_libraries(${SUBPROJECT_NAME} ${ITK_LIBRARIES})
 endif()
+
+option(USE_JSON "Support loading JSON files" ON)
+if (USE_JSON)
+  if (EXISTS "${NLOHMANN_JSON_INCLUDE_DIR}/nlohmann/json.hpp")
+    include_directories(${NLOHMANN_JSON_INCLUDE_DIR})
+    #target_sources(${SUBPROJECT_NAME} PRIVATE prediction.cpp)
+    target_compile_definitions(${SUBPROJECT_NAME} PRIVATE -DHAVE_JSON)
+  else()
+    message(WARNING "Could not find nlohmann json. Generating without JSON support")
+  endif()
+endif()
+
