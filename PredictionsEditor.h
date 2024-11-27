@@ -21,6 +21,7 @@ using UpdateCameraCallback =
                        const anari::math::float3&,
                        const anari::math::float3&)>;
 using ResetCameraCallback = std::function<void(bool)>;
+using ShowImageCallback = std::function<void(size_t)>;
 
 class PredictionsEditor : public anari_viewer::Window
 {
@@ -32,17 +33,21 @@ class PredictionsEditor : public anari_viewer::Window
 
   void setUpdateCameraCallback(UpdateCameraCallback cb);
   void setResetCameraCallback(ResetCameraCallback cb);
+  void setShowImageCallback(ResetCameraCallback cb);
   void triggerUpdateCameraCallback(
       const anari::math::float3& eye,
       const anari::math::float3& center,
       const anari::math::float3& up);
   void triggerResetCameraCallback(bool resetAzel);
+  void triggerShowImageCallback(size_t index);
 
  private:
   // callback called whenever new camera selected
   UpdateCameraCallback m_updateCameraCallback;
   // callback called whenever reset camera selected
   ResetCameraCallback m_resetCameraCallback;
+  // callback called whenever an image is selected
+  ShowImageCallback m_showImageCallback;
 
   prediction_container m_predictions;
 };

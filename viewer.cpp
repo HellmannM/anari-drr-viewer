@@ -3,9 +3,11 @@
 
 // anari_viewer
 #include "anari_viewer/Application.h"
-#include "Viewport.h"
 // glm
 #include "glm/gtc/matrix_transform.hpp"
+#ifdef HAVE_VISIONARAY
+#include <common/image.h>
+#endif
 // std
 #include <algorithm>
 #include <iostream>
@@ -14,13 +16,16 @@
 #include <sstream>
 // ours
 #include "FieldTypes.h"
+#include "Image.h"
+#include "ImageViewport.h"
 #include "prediction.h"
 #include "PredictionsEditor.h"
 #include "readRAW.h"
-#include "SettingsEditor.h"
 #ifdef HAVE_ITK
 #include "readNifti.h"
 #endif
+#include "SettingsEditor.h"
+#include "Viewport.h"
 
 static const bool g_true = true;
 static bool g_verbose = false;
@@ -39,43 +44,45 @@ static std::string g_jsonfile;
 static const char *g_defaultLayout =
     R"layout(
 [Window][MainDockSpace]
-Pos=0,25
-Size=1440,813
+Pos=0,0
+Size=1920,1200
 Collapsed=0
 
 [Window][Viewport]
-Pos=551,25
-Size=889,813
+Pos=551,0
+Size=1369,1200
 Collapsed=0
 DockId=0x00000003,0
 
 [Window][Settings Editor]
-Pos=0,25
-Size=549,813
+Pos=0,0
+Size=549,635
 Collapsed=0
-DockId=0x00000002,0
+DockId=0x00000001,0
 
 [Window][Predictions Editor]
-Pos=0,25
-Size=549,813
+Pos=0,0
+Size=549,635
 Collapsed=0
-DockId=0x00000002,1
+DockId=0x00000001,1
 
 [Window][Debug##Default]
 Pos=60,60
 Size=400,400
 Collapsed=0
 
-[Window][ISO Editor]
-Pos=0,557
-Size=549,438
+[Window][Image Viewport]
+Pos=0,637
+Size=549,563
 Collapsed=0
-DockId=0x00000004,0
+DockId=0x00000005,0
 
 [Docking][Data]
-DockSpace   ID=0x782A6D6B Window=0xDEDC5B90 Pos=0,25 Size=1440,813 Split=X
-  DockNode  ID=0x00000002 Parent=0x782A6D6B SizeRef=549,1174 Selected=0xE3280322
-  DockNode  ID=0x00000003 Parent=0x782A6D6B SizeRef=1369,1174 CentralNode=1 Selected=0x13926F0B
+DockSpace     ID=0x782A6D6B Window=0xDEDC5B90 Pos=0,0 Size=1920,1200 Split=X
+  DockNode    ID=0x00000002 Parent=0x782A6D6B SizeRef=549,1174 Split=Y Selected=0x06E6D145
+    DockNode  ID=0x00000001 Parent=0x00000002 SizeRef=549,635 Selected=0x06E6D145
+    DockNode  ID=0x00000005 Parent=0x00000002 SizeRef=549,563 Selected=0xD99F06E6
+  DockNode    ID=0x00000003 Parent=0x782A6D6B SizeRef=1369,1174 CentralNode=1 Selected=0x13926F0B
 )layout";
 
 namespace viewer {
@@ -92,6 +99,7 @@ struct AppState
 #endif
   RAWReader rawReader;
   prediction_container predictions;
+  std::vector<Image> images;
 };
 
 static void statusFunc(const void *userData,
@@ -385,6 +393,20 @@ class Application : public anari_viewer::Application
 
     if (!g_jsonfile.empty())
       m_state.predictions = prediction_container(g_jsonfile);
+#ifdef HAVE_VISIONARAY
+    // load images
+    if (!m_state.predictions.predictions.empty())
+    {
+      for (auto it = m_state.predictions.begin(); it != m_state.predictions.end(); ++it)
+      {
+        visionaray::image visionarayImage;
+        visionarayImage.load(it->filename);
+        //TODO construct in-place
+        Image image(visionarayImage.width(), visionarayImage.height(), 4 /*TODO bpp*/, visionarayImage.data());
+        m_state.images.push_back(image);
+      }
+    }
+#endif
 
 
     // ImGui //
@@ -400,6 +422,9 @@ class Application : public anari_viewer::Application
     viewport->setManipulator(&m_state.manipulator);
     viewport->setWorld(m_state.world);
     viewport->resetView();
+
+    auto *imageViewport = new windows::ImageViewport(m_state.images);
+    imageViewport->clear();
 
     auto *seditor = new windows::SettingsEditor();
     seditor->setUpdateCallback(
@@ -424,11 +449,13 @@ class Application : public anari_viewer::Application
           viewport->setView(center, dist, azel);
         });
     peditor->setResetCameraCallback([=](bool resetAzel){ viewport->resetView(resetAzel); });
+    peditor->setShowImageCallback([=](size_t index){ imageViewport->showImage(index); });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
     windows.emplace_back(seditor);
     windows.emplace_back(peditor);
+    windows.emplace_back(imageViewport);
 
     return windows;
   }
