@@ -3,7 +3,12 @@
 
 #pragma once
 
+// glad
+#include "glad/glad.h"
+// glfw
+#include <GLFW/glfw3.h>
 // anari
+#include <anari/anari_cpp/ext/linalg.h>
 #include "anari_viewer/windows/Window.h"
 // std
 #include <functional>
@@ -26,7 +31,12 @@ class ImageViewport : public anari_viewer::Window
   void showImage(size_t index);
 
  private:
+  void reshape(anari::math::int2 newWindowSize);
+
   std::vector<Image> m_images;
+
+  GLuint m_framebufferTexture{0};
+  anari::math::int2 m_viewportSize{1920, 1080};
 };
 
 } // namespace windows

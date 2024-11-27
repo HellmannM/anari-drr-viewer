@@ -537,7 +537,7 @@ static void parseCommandLine(int argc, char *argv[])
         std::exit(0);
       }
     } else if (arg == "--json" || arg == "-j") {
-      g_jsonfile = arg;
+      g_jsonfile = argv[++i];
     } else
       g_filename = std::move(arg);
   }
