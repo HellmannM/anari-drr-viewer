@@ -161,6 +161,11 @@ void DRRViewport::resetView(bool resetAzEl)
   m_cameraToken = 0;
 }
 
+void DRRViewport::setView(anari::math::float3 center, float dist, anari::math::float2 azel)
+{
+  m_arcball->setConfig(center, dist, azel);
+}
+
 anari::Device DRRViewport::device() const
 {
   return m_device;
@@ -512,9 +517,15 @@ void DRRViewport::ui_overlay()
   if (showCameraInfo) {
     const auto azel = m_arcball->azel();
     const auto dist = m_arcball->distance();
+    const auto eye = m_arcball->eye();
+    const auto dir = m_arcball->dir();
+    const auto up = m_arcball->up();
     ImGui::Text("  az: %f", azel.x);
     ImGui::Text("  el: %f", azel.y);
     ImGui::Text("dist: %f", dist);
+    ImGui::Text(" eye: (%f, %f, %f)", eye.x, eye.y, eye.z);
+    ImGui::Text(" dir: (%f, %f, %f)", dir.x, dir.y, dir.z);
+    ImGui::Text("  up: (%f, %f, %f)", up.x, up.y, up.z);
   }
 
   ImGui::End();

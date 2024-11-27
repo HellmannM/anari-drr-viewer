@@ -32,6 +32,7 @@ struct DRRViewport : public anari_viewer::Window
   void setManipulator(manipulators::Orbit *m);
 
   void resetView(bool resetAzEl = true);
+  void setView(anari::math::float3 center, float dist, anari::math::float2 azel);
 
   anari::Device device() const;
 

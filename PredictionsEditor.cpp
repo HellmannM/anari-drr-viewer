@@ -15,32 +15,8 @@ PredictionsEditor::PredictionsEditor(const prediction_container& predictions, co
 
 void PredictionsEditor::buildUI()
 {
-  if (m_predictionsChanged) {
-    triggerUpdateCameraCallback();
-    m_predictionsChanged = false;
-  }
-
-//  //combo box
-//  std::vector<const char *> names(m_tfnsNames.size(), nullptr);
-//  std::transform(m_tfnsNames.begin(),
-//      m_tfnsNames.end(),
-//      names.begin(),
-//      [](const std::string &t) { return t.c_str(); });
-//
-//  int newMap = m_currentMap;
-//  if (ImGui::Combo("color map", &newMap, names.data(), names.size()))
-//    setMap(newMap);
-//
-//  ImGui::Separator();
-
-//  drawEditor();
-//
-//  ImGui::Separator();
-
-
-  if (ImGui::Button("reset##view")) {
-    //TODO
-    m_predictionsChanged = true;
+  if (ImGui::Button("reset view")) {
+    triggerResetCameraCallback(/*azel*/ true);
   }
 
   ImGui::Separator();
@@ -49,25 +25,39 @@ void PredictionsEditor::buildUI()
   {
     const auto buttonName = "Load " + std::to_string(i);
     if (ImGui::Button(buttonName.c_str())) {
-      m_eye = m_predictions.predictions[i].eye;
-      m_center = m_predictions.predictions[i].center;
-      m_up = m_predictions.predictions[i].up;
-      m_predictionsChanged = true;
+      triggerUpdateCameraCallback(
+          m_predictions.predictions[i].eye,
+          m_predictions.predictions[i].center,
+          m_predictions.predictions[i].up);
     }
   }
 
   ImGui::Separator();
 }
 
-void PredictionsEditor::setUpdateCameraCallback(PredictionsUpdateCameraCallback cb)
+void PredictionsEditor::setUpdateCameraCallback(UpdateCameraCallback cb)
 {
   m_updateCameraCallback = cb;
 }
 
-void PredictionsEditor::triggerUpdateCameraCallback()
+void PredictionsEditor::setResetCameraCallback(ResetCameraCallback cb)
+{
+  m_resetCameraCallback = cb;
+}
+
+void PredictionsEditor::triggerResetCameraCallback(bool resetAzel)
+{
+  if (m_resetCameraCallback)
+    m_resetCameraCallback(resetAzel);
+}
+
+void PredictionsEditor::triggerUpdateCameraCallback(
+    const anari::math::float3& eye,
+    const anari::math::float3& center,
+    const anari::math::float3& up)
 {
   if (m_updateCameraCallback)
-    m_updateCameraCallback(m_eye, m_center, m_up);
+    m_updateCameraCallback(eye, center, up);
 }
 
 } // namespace windows

@@ -16,8 +16,11 @@
 
 namespace windows {
 
-using PredictionsUpdateCameraCallback =
-    std::function<void(const anari::math::float3&, const anari::math::float3&, const anari::math::float3&)>;
+using UpdateCameraCallback =
+    std::function<void(const anari::math::float3&,
+                       const anari::math::float3&,
+                       const anari::math::float3&)>;
+using ResetCameraCallback = std::function<void(bool)>;
 
 class PredictionsEditor : public anari_viewer::Window
 {
@@ -27,20 +30,21 @@ class PredictionsEditor : public anari_viewer::Window
 
   void buildUI() override;
 
-  void setUpdateCameraCallback(PredictionsUpdateCameraCallback cb);
-  void triggerUpdateCameraCallback();
+  void setUpdateCameraCallback(UpdateCameraCallback cb);
+  void setResetCameraCallback(ResetCameraCallback cb);
+  void triggerUpdateCameraCallback(
+      const anari::math::float3& eye,
+      const anari::math::float3& center,
+      const anari::math::float3& up);
+  void triggerResetCameraCallback(bool resetAzel);
 
  private:
   // callback called whenever new camera selected
-  PredictionsUpdateCameraCallback m_updateCameraCallback;
-
-  // flag indicating transfer function has changed in UI
-  bool m_predictionsChanged{false};
+  UpdateCameraCallback m_updateCameraCallback;
+  // callback called whenever reset camera selected
+  ResetCameraCallback m_resetCameraCallback;
 
   prediction_container m_predictions;
-  anari::math::float3 m_eye;
-  anari::math::float3 m_center;
-  anari::math::float3 m_up;
 };
 
 } // namespace windows

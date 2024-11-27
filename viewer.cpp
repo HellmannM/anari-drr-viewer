@@ -413,8 +413,17 @@ class Application : public anari_viewer::Application
             const anari::math::float3 &dir,
             const anari::math::float3 &up)
         {
-            //TODO viewport->setCamera(eye, dir, up);
+          auto dist = 100.f;
+          auto center = eye + dist * dir;
+          anari::math::float3 y{0.f, 1.f, 0.f};
+          anari::math::float3 z{0.f, 0.f, 1.f};
+          auto projectedDir = anari::math::cross(dir, z);
+          auto az = anari::math::acos(anari::math::dot(projectedDir, y));
+          auto el = anari::math::acos(anari::math::dot(dir, z));
+          anari::math::float2 azel{anari::degrees(az) + 90.f, anari::degrees(el) + 180.f};
+          viewport->setView(center, dist, azel);
         });
+    peditor->setResetCameraCallback([=](bool resetAzel){ viewport->resetView(resetAzel); });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
