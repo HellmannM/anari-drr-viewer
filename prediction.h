@@ -26,15 +26,15 @@ struct prediction
         : filename(file), eye(eye_x, eye_y, eye_z), center(center_x, center_y, center_z), up(up_x, up_y, up_z) {}
 };
 
-//std::ostream& operator<<(std::ostream& os, const anari::math::float3& v)
-//{
-//    return os << '(' << v.x << ", " << v.y << ", " << v.z << ')';
-//}
-//
-//std::ostream& operator<<(std::ostream& os, const prediction& p)
-//{
-//    return os << p.filename << "\neye: " << p.eye << "\ncenter: " << p.center << "\nup: " << p.up << "\n";
-//}
+inline std::ostream& operator<<(std::ostream& os, const anari::math::float3& v)
+{
+    return os << '(' << v.x << ", " << v.y << ", " << v.z << ')';
+}
+
+inline std::ostream& operator<<(std::ostream& os, const prediction& p)
+{
+    return os << p.filename << "\neye: " << p.eye << "\ncenter: " << p.center << "\nup: " << p.up << "\n";
+}
 
 
 struct prediction_container
@@ -83,7 +83,7 @@ struct prediction_container
                     p["center"]["x"], p["center"]["y"], p["center"]["z"],
                     p["up"]["x"], p["up"]["y"], p["up"]["z"]
                 ));
-                //std::cout << predictions.back() << "\n";
+                std::cout << predictions.back() << "\n";
             }
         } catch (...)
         {

@@ -27,13 +27,13 @@ class ImageViewport : public anari_viewer::Window
 
   void buildUI() override;
 
-  void clear();
   void showImage(size_t index);
 
  private:
   void reshape(anari::math::int2 newWindowSize);
 
   std::vector<Image> m_images;
+  ssize_t m_imageIndex{-1};
 
   GLuint m_framebufferTexture{0};
   anari::math::int2 m_viewportSize{1920, 1080};

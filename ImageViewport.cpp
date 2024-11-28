@@ -37,23 +37,38 @@ void ImageViewport::buildUI()
 
   if (m_viewportSize != viewportSize)
     reshape(viewportSize);
-}
 
-void ImageViewport::clear()
-{
-  //TODO
+  ImGui::Image((void *)(intptr_t)m_framebufferTexture,
+      ImGui::GetContentRegionAvail(),
+      ImVec2(1, 0),
+      ImVec2(0, 1));
 }
 
 void ImageViewport::showImage(size_t index)
 {
   if ((index >= m_images.size()) || (m_images[index].data.empty()))
     return;
-  if (m_images[index].bpp == 4) {
+  if (m_images[index].bpp != 4) {
     printf("bad image: unsupported bpp = %lu\n", m_images[index].bpp);
     return;
   }
-    
-  glBindTexture(GL_TEXTURE_2D, m_framebufferTexture);
+  m_imageIndex = static_cast<ssize_t>(index);
+
+  // copy into temporary texture
+  GLuint tempTexture{0};
+  glGenTextures(1, &tempTexture);
+  glBindTexture(GL_TEXTURE_2D, tempTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D,
+      0,
+      GL_RGBA8,
+      m_images[index].width,
+      m_images[index].height,
+      0,
+      GL_RGBA,
+      GL_UNSIGNED_BYTE,
+      0);
   glTexSubImage2D(GL_TEXTURE_2D,
       0,
       0,
@@ -63,6 +78,51 @@ void ImageViewport::showImage(size_t index)
       GL_RGBA,
       GL_UNSIGNED_BYTE,
       m_images[index].data.data());
+
+  // setup fb to render into m_framebufferTexture
+  GLint oldFbo{0};
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFbo);
+  GLuint fbo;
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_framebufferTexture, 0);
+
+  // calc scaling and offset
+  int imgWidth = m_images[index].width;
+  int imgHeight = m_images[index].height;
+  GLfloat offsetX = 0;
+  GLfloat offsetY = 0;
+  GLfloat renderWidth = m_viewportSize.x;
+  GLfloat renderHeight = m_viewportSize.y;
+  float ratioImg = float(imgWidth) / imgHeight;
+  float ratioScreen = renderWidth / renderHeight;
+  if (ratioImg > ratioScreen)
+      renderHeight = renderWidth / ratioImg;
+  else
+      renderWidth = renderHeight * ratioImg;
+  offsetX = 0 + (m_viewportSize.x - renderWidth) * .5f;
+  offsetY = 0 + (m_viewportSize.y - renderHeight) * .5f;
+
+  // render to fbo (and flip x+y axes)
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, tempTexture);
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(-1, -1, 0);
+  glScalef(2.0f / m_viewportSize.x, 2.0f / m_viewportSize.y, 1.0);
+  glBegin(GL_QUADS);
+  glTexCoord2f(1, 1);
+  glVertex2f(offsetX, offsetY);
+  glTexCoord2f(0, 1);
+  glVertex2f(offsetX + renderWidth, offsetY);
+  glTexCoord2f(0, 0);
+  glVertex2f(offsetX + renderWidth, offsetY + renderHeight);
+  glTexCoord2f(1, 0);
+  glVertex2f(offsetX, offsetY + renderHeight);
+  glEnd();
+  glBindFramebuffer(GL_FRAMEBUFFER, oldFbo);
 }
 
 void ImageViewport::reshape(anari::math::int2 newSize)
@@ -85,7 +145,8 @@ void ImageViewport::reshape(anari::math::int2 newSize)
       GL_UNSIGNED_BYTE,
       0);
 
-  clear();
+  if (m_imageIndex >= 0)
+    showImage(m_imageIndex);
 }
 
 } // namespace windows

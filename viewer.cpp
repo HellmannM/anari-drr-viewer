@@ -401,9 +401,10 @@ class Application : public anari_viewer::Application
       {
         visionaray::image visionarayImage;
         visionarayImage.load(it->filename);
-        //TODO construct in-place
-        Image image(visionarayImage.width(), visionarayImage.height(), 4 /*TODO bpp*/, visionarayImage.data());
-        m_state.images.push_back(image);
+        std::cout << "Loaded " << it->filename << ": ("
+            << visionarayImage.width() << "x" << visionarayImage.height()
+            << ", " << visionarayImage.format() << ")\n";
+        m_state.images.emplace_back(visionarayImage.width(), visionarayImage.height(), 4 /*TODO bpp*/, visionarayImage.data());
       }
     }
 #endif
@@ -424,7 +425,6 @@ class Application : public anari_viewer::Application
     viewport->resetView();
 
     auto *imageViewport = new windows::ImageViewport(m_state.images);
-    imageViewport->clear();
 
     auto *seditor = new windows::SettingsEditor();
     seditor->setUpdateCallback(
