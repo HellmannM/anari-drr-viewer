@@ -73,6 +73,7 @@ DRRViewport::DRRViewport(anari::Device device, const char *name)
   updateFrame();
   updateCamera(true);
   startNewFrame();
+  updateImage();
 }
 
 DRRViewport::~DRRViewport()
@@ -97,8 +98,9 @@ void DRRViewport::buildUI()
   if (m_viewportSize != viewportSize)
     reshape(viewportSize);
 
-  updateImage();
-  updateCamera();
+  const auto cameraChanged = updateCamera();
+  if (cameraChanged || (!m_singleShot))
+    updateImage();
 
   ImGui::Image((void *)(intptr_t)m_framebufferTexture,
       ImGui::GetContentRegionAvail(),
@@ -159,11 +161,21 @@ void DRRViewport::resetView(bool resetAzEl)
   auto azel = resetAzEl ? anari::math::float2(180.f, 200.f) : m_arcball->azel();
   m_arcball->setConfig(center, 1.25f * linalg::length(diag), azel);
   m_cameraToken = 0;
+
+  cancelFrame();
+  updateCamera(true);
+  startNewFrame();
+  updateImage();
 }
 
 void DRRViewport::setView(anari::math::float3 center, float dist, anari::math::float2 azel)
 {
   m_arcball->setConfig(center, dist, azel);
+
+  cancelFrame();
+  updateCamera(true);
+  startNewFrame();
+  updateImage();
 }
 
 anari::Device DRRViewport::device() const
@@ -198,7 +210,10 @@ void DRRViewport::reshape(anari::math::int2 newSize)
       0);
 
   updateFrame();
+  cancelFrame();
   updateCamera(true);
+  startNewFrame();
+  updateImage();
 }
 
 void DRRViewport::startNewFrame()
@@ -229,10 +244,10 @@ void DRRViewport::updateFrame()
   anari::commitParameters(m_device, m_frame);
 }
 
-void DRRViewport::updateCamera(bool force)
+bool DRRViewport::updateCamera(bool force)
 {
   if (!force && !m_arcball->hasChanged(m_cameraToken))
-    return;
+    return false;
 
   anari::setParameter(m_device, m_perspCamera, "position", m_arcball->eye());
   anari::setParameter(m_device, m_perspCamera, "direction", m_arcball->dir());
@@ -259,6 +274,8 @@ void DRRViewport::updateCamera(bool force)
 
   anari::commitParameters(m_device, m_perspCamera);
   anari::commitParameters(m_device, m_orthoCamera);
+
+  return true;
 }
 
 void DRRViewport::updateImage()
@@ -303,6 +320,9 @@ void DRRViewport::updateImage()
     }
 
     anari::unmap(m_device, m_frame, "channel.color");
+
+    auto db = anari::map<anari::math::float3>(m_device, m_frame, "channel.depth3D");
+    anari::unmap(m_device, m_frame, "channel.depth3D");
   }
 
   if (!m_currentlyRendering || m_frameCancelled)
@@ -391,9 +411,17 @@ void DRRViewport::ui_contextMenu()
 
     if (m_renderers.size() > 1 && ImGui::BeginMenu("subtype")) {
       for (int i = 0; i < m_rendererNames.size(); i++) {
-        if (ImGui::MenuItem(m_rendererNames[i].c_str())) {
+        const auto& rendererName = m_rendererNames[i];
+        if (ImGui::MenuItem(rendererName.c_str())) {
+          if ((rendererName == "DRR") || (rendererName == "drr"))
+            m_singleShot = true;
+          else
+            m_singleShot = false;
           m_currentRenderer = i;
           updateFrame();
+          cancelFrame();
+          startNewFrame();
+          updateImage();
         }
       }
       ImGui::EndMenu();
@@ -418,8 +446,12 @@ void DRRViewport::ui_contextMenu()
 
     ImGui::BeginDisabled(m_useOrthoCamera);
 
-    if (ImGui::SliderFloat("fov", &m_fov, 0.1f, 180.f))
+    if (ImGui::SliderFloat("fov", &m_fov, 0.1f, 180.f)) {
       updateCamera(true);
+      cancelFrame();
+      startNewFrame();
+      updateImage();
+    }
 
     ImGui::EndDisabled();
 
