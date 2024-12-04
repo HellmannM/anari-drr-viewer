@@ -7,6 +7,10 @@
 #include "glm/gtc/matrix_transform.hpp"
 #ifdef HAVE_VISIONARAY
 #include <common/image.h>
+#include <visionaray/pinhole_camera.h>
+#include <common/manip/arcball_manipulator.h>
+#include <common/manip/pan_manipulator.h>
+#include <common/manip/zoom_manipulator.h>
 #endif
 // std
 #include <algorithm>
@@ -89,7 +93,7 @@ namespace viewer {
 
 struct AppState
 {
-  manipulators::Orbit manipulator;
+  visionaray::pinhole_camera camera;
   anari::Device device{nullptr};
   anari::World world{nullptr};
   anari::SpatialField field{nullptr};
@@ -419,9 +423,13 @@ class Application : public anari_viewer::Application
     if (g_useDefaultLayout)
       ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
 
-    auto *viewport = new windows::DRRViewport(device, "Viewport");
-    viewport->setManipulator(&m_state.manipulator);
+    m_state.camera = visionaray::pinhole_camera();
+    auto *viewport = new windows::DRRViewport(device, m_state.camera, "Viewport");
     viewport->setWorld(m_state.world);
+    viewport->addManipulator( std::make_shared<visionaray::arcball_manipulator>(m_state.camera, visionaray::mouse::Left) );
+    viewport->addManipulator( std::make_shared<visionaray::pan_manipulator>(m_state.camera, visionaray::mouse::Middle) );
+    viewport->addManipulator( std::make_shared<visionaray::pan_manipulator>(m_state.camera, visionaray::mouse::Left, visionaray::keyboard::Alt) );
+    viewport->addManipulator( std::make_shared<visionaray::zoom_manipulator>(m_state.camera, visionaray::mouse::Right) );
     viewport->resetView();
 
     auto *imageViewport = new windows::ImageViewport(m_state.images);
@@ -435,20 +443,12 @@ class Application : public anari_viewer::Application
     auto *peditor = new windows::PredictionsEditor(m_state.predictions);
     peditor->setUpdateCameraCallback(
         [=](const anari::math::float3 &eye, 
-            const anari::math::float3 &dir,
+            const anari::math::float3 &center,
             const anari::math::float3 &up)
         {
-          auto dist = 100.f;
-          auto center = eye + dist * dir;
-          anari::math::float3 y{0.f, 1.f, 0.f};
-          anari::math::float3 z{0.f, 0.f, 1.f};
-          auto projectedDir = anari::math::cross(dir, z);
-          auto az = anari::math::acos(anari::math::dot(projectedDir, y));
-          auto el = anari::math::acos(anari::math::dot(dir, z));
-          anari::math::float2 azel{anari::degrees(az) + 90.f, anari::degrees(el) + 180.f};
-          viewport->setView(center, dist, azel);
+          viewport->setView(eye, center, up);
         });
-    peditor->setResetCameraCallback([=](bool resetAzel){ viewport->resetView(resetAzel); });
+    peditor->setResetCameraCallback([=](){ viewport->resetView(); });
     peditor->setShowImageCallback([=](size_t index){ imageViewport->showImage(index); });
 
     anari_viewer::WindowArray windows;

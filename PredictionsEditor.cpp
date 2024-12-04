@@ -16,7 +16,7 @@ PredictionsEditor::PredictionsEditor(const prediction_container& predictions, co
 void PredictionsEditor::buildUI()
 {
   if (ImGui::Button("reset view")) {
-    triggerResetCameraCallback(/*azel*/ true);
+    triggerResetCameraCallback();
   }
 
   ImGui::Separator();
@@ -89,15 +89,15 @@ void PredictionsEditor::setResetCameraCallback(ResetCameraCallback cb)
   m_resetCameraCallback = cb;
 }
 
-void PredictionsEditor::setShowImageCallback(ResetCameraCallback cb)
+void PredictionsEditor::setShowImageCallback(ShowImageCallback cb)
 {
   m_showImageCallback = cb;
 }
 
-void PredictionsEditor::triggerResetCameraCallback(bool resetAzel)
+void PredictionsEditor::triggerResetCameraCallback()
 {
   if (m_resetCameraCallback)
-    m_resetCameraCallback(resetAzel);
+    m_resetCameraCallback();
 }
 
 void PredictionsEditor::triggerUpdateCameraCallback(

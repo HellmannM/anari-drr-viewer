@@ -14,25 +14,31 @@
 #include <anari/anari_cpp.hpp>
 // anari_viewer
 #include "anari_viewer/windows/Window.h"
+// visionaray
+#include <common/input/mouse_event.h>
+#include <common/manip/camera_manipulator.h>
+#include <visionaray/pinhole_camera.h>
 // std
 #include <array>
 #include <limits>
+#include <memory>
 
 namespace windows {
 
 struct DRRViewport : public anari_viewer::Window
 {
-  DRRViewport(anari::Device device, const char *name = "Viewport");
+  DRRViewport(anari::Device device, visionaray::pinhole_camera& camera, const char *name = "Viewport");
   ~DRRViewport();
 
   void buildUI() override;
 
   void setWorld(anari::World world = nullptr, bool resetCameraView = true);
 
-  void setManipulator(manipulators::Orbit *m);
+  void addManipulator(std::shared_ptr<visionaray::camera_manipulator> manip);
+  void setCamera(visionaray::pinhole_camera &camera);
 
-  void resetView(bool resetAzEl = true);
-  void setView(anari::math::float3 center, float dist, anari::math::float2 azel);
+  void resetView();
+  void setView(anari::math::float3 eye, anari::math::float3 center, anari::math::float3 up);
 
   anari::Device device() const;
 
@@ -43,7 +49,7 @@ struct DRRViewport : public anari_viewer::Window
 
   void startNewFrame();
   void updateFrame();
-  bool updateCamera(bool force = false);
+  void updateCamera(bool force = false);
   void updateImage();
   void cancelFrame();
 
@@ -51,20 +57,29 @@ struct DRRViewport : public anari_viewer::Window
   void ui_contextMenu();
   void ui_overlay();
 
+  void handleMouseDownEvent(visionaray::mouse_event const& event);
+  void handleMouseUpEvent(visionaray::mouse_event const& event);
+  void handleMouseMoveEvent(visionaray::mouse_event const& event);
+
   // Data /////////////////////////////////////////////////////////////////////
 
-  anari::math::float2 m_previousMouse{-1.f, -1.f};
-  bool m_mouseRotating{false};
-  bool m_manipulating{false};
   bool m_currentlyRendering{true};
   bool m_contextMenuVisible{false};
   bool m_frameCancelled{false};
   bool m_saveNextFrame{false};
   int m_screenshotIndex{0};
 
+  bool m_dolly{false};
+  bool m_pan{false};
+  bool m_orbit{false};
+  bool m_viewChanged{false};
+  visionaray::mouse::button m_button{visionaray::mouse::button::NoButton};
+  visionaray::keyboard::key m_modifier{visionaray::keyboard::key::NoKey};
+  visionaray::pinhole_camera &m_camera;
+  std::vector<std::shared_ptr<visionaray::camera_manipulator>> m_manipulators;
+
   bool m_showOverlay{true};
   int m_frameSamples{0};
-  bool m_useOrthoCamera{false};
   bool m_singleShot{false};
 
   float m_fov{40.f};
@@ -78,19 +93,11 @@ struct DRRViewport : public anari_viewer::Window
   anari::World m_world{nullptr};
 
   anari::Camera m_perspCamera{nullptr};
-  anari::Camera m_orthoCamera{nullptr};
 
   std::vector<std::string> m_rendererNames;
   std::vector<ui::ParameterList> m_rendererParameters;
   std::vector<anari::Renderer> m_renderers;
   int m_currentRenderer{0};
-
-  // camera manipulator
-
-  int m_arcballUp{1};
-  manipulators::Orbit m_localArcball;
-  manipulators::Orbit *m_arcball{nullptr};
-  manipulators::UpdateToken m_cameraToken{0};
 
   // OpenGL + display
 

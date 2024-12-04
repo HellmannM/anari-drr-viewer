@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Viewport.h"
+// Visionaray
+#include <common/input/keyboard.h>
+#include <common/input/mouse.h>
 // std
 #include <cstring>
+#include <memory>
 // stb_image
 #include "stb_image_write.h"
 
@@ -13,11 +17,9 @@ namespace windows {
 // DRRViewport definitions ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-DRRViewport::DRRViewport(anari::Device device, const char *name)
-    : Window(name, true), m_device(device)
+DRRViewport::DRRViewport(anari::Device device, visionaray::pinhole_camera &camera, const char *name)
+    : Window(name, true), m_device(device), m_camera(camera)
 {
-  setManipulator(nullptr);
-
   m_overlayWindowName = "overlay_";
   m_overlayWindowName += name;
 
@@ -61,7 +63,6 @@ DRRViewport::DRRViewport(anari::Device device, const char *name)
 
   m_frame = anari::newObject<anari::Frame>(m_device);
   m_perspCamera = anari::newObject<anari::Camera>(m_device, "perspective");
-  m_orthoCamera = anari::newObject<anari::Camera>(m_device, "orthographic");
 
   for (auto &name : m_rendererNames) {
     m_renderers.push_back(
@@ -82,7 +83,6 @@ DRRViewport::~DRRViewport()
   anari::wait(m_device, m_frame);
 
   anari::release(m_device, m_perspCamera);
-  anari::release(m_device, m_orthoCamera);
   anari::release(m_device, m_world);
   for (auto &r : m_renderers)
     anari::release(m_device, r);
@@ -98,9 +98,10 @@ void DRRViewport::buildUI()
   if (m_viewportSize != viewportSize)
     reshape(viewportSize);
 
-  const auto cameraChanged = updateCamera();
-  if (cameraChanged || (!m_singleShot))
+  if (m_viewChanged || (!m_singleShot)) {
+    updateCamera();
     updateImage();
+  }
 
   ImGui::Image((void *)(intptr_t)m_framebufferTexture,
       ImGui::GetContentRegionAvail(),
@@ -114,11 +115,6 @@ void DRRViewport::buildUI()
 
   if (!m_contextMenuVisible)
     ui_handleInput();
-}
-
-void DRRViewport::setManipulator(manipulators::Orbit *m)
-{
-  m_arcball = m ? m : &m_localArcball;
 }
 
 void DRRViewport::setWorld(anari::World world, bool resetCameraView)
@@ -141,8 +137,22 @@ void DRRViewport::setWorld(anari::World world, bool resetCameraView)
   updateFrame();
 }
 
-void DRRViewport::resetView(bool resetAzEl)
+void DRRViewport::addManipulator(std::shared_ptr<visionaray::camera_manipulator> manip)
 {
+  m_manipulators.push_back(manip);
+}
+
+void DRRViewport::setCamera(visionaray::pinhole_camera &camera)
+{
+  m_camera = camera;
+  m_viewChanged = true;
+}
+
+void DRRViewport::resetView()
+{
+  float aspect = m_viewportSize.x / float(m_viewportSize.y);
+  m_camera.perspective(45.0f * visionaray::constants::degrees_to_radians<float>(), aspect, 0.001f, 1000.0f);
+
   anari::math::float3 bounds[2] = {{0.f, 0.f, 0.f}, {1.f, 1.f, 1.f}};
 
   if (!anariGetProperty(m_device,
@@ -155,12 +165,10 @@ void DRRViewport::resetView(bool resetAzEl)
     printf("WARNING: bounds not returned by the device! Using unit cube.\n");
   }
 
-  auto center = 0.5f * (bounds[0] + bounds[1]);
-  auto diag = bounds[1] - bounds[0];
-
-  auto azel = resetAzEl ? anari::math::float2(180.f, 200.f) : m_arcball->azel();
-  m_arcball->setConfig(center, 1.25f * linalg::length(diag), azel);
-  m_cameraToken = 0;
+  visionaray::vec3f min{bounds[0].x, bounds[0].y, bounds[0].z};
+  visionaray::vec3f max{bounds[1].x, bounds[1].y, bounds[1].z};
+  m_camera.view_all({min, max}, {0.f, 1.f, 0.f});
+  m_viewChanged = true;
 
   cancelFrame();
   updateCamera(true);
@@ -168,10 +176,11 @@ void DRRViewport::resetView(bool resetAzEl)
   updateImage();
 }
 
-void DRRViewport::setView(anari::math::float3 center, float dist, anari::math::float2 azel)
+void DRRViewport::setView(anari::math::float3 eye, anari::math::float3 center, anari::math::float3 up)
 {
-  m_arcball->setConfig(center, dist, azel);
+  m_camera.look_at({eye.x, eye.y, eye.z}, {center.x, center.y, center.z}, {up.x, up.y, up.z});
 
+  m_viewChanged = true;
   cancelFrame();
   updateCamera(true);
   startNewFrame();
@@ -209,6 +218,13 @@ void DRRViewport::reshape(anari::math::int2 newSize)
       GL_UNSIGNED_BYTE,
       0);
 
+  m_camera.set_viewport(0, 0, newSize.x, newSize.y);
+  float fovy = m_camera.fovy();
+  float aspect = newSize.x / static_cast<float>(newSize.y);
+  float z_near = m_camera.z_near();
+  float z_far = m_camera.z_far();
+  m_camera.perspective(fovy, aspect, z_near, z_far);
+
   updateFrame();
   cancelFrame();
   updateCamera(true);
@@ -234,48 +250,37 @@ void DRRViewport::updateFrame()
       m_device, m_frame, "channel.color", ANARI_UFIXED8_RGBA_SRGB);
   anari::setParameter(m_device, m_frame, "accumulation", true);
   anari::setParameter(m_device, m_frame, "world", m_world);
-  if (m_useOrthoCamera)
-    anari::setParameter(m_device, m_frame, "camera", m_orthoCamera);
-  else
-    anari::setParameter(m_device, m_frame, "camera", m_perspCamera);
+  anari::setParameter(m_device, m_frame, "camera", m_perspCamera);
   anari::setParameter(
       m_device, m_frame, "renderer", m_renderers[m_currentRenderer]);
 
   anari::commitParameters(m_device, m_frame);
 }
 
-bool DRRViewport::updateCamera(bool force)
+void DRRViewport::updateCamera(bool force)
 {
-  if (!force && !m_arcball->hasChanged(m_cameraToken))
-    return false;
+  if (!force && !m_viewChanged)
+    return;
 
-  anari::setParameter(m_device, m_perspCamera, "position", m_arcball->eye());
-  anari::setParameter(m_device, m_perspCamera, "direction", m_arcball->dir());
-  anari::setParameter(m_device, m_perspCamera, "up", m_arcball->up());
+  const auto& vEye = m_camera.eye();
+  auto vDir = visionaray::normalize(m_camera.center() - vEye);
+  const auto& vUp  = m_camera.up();
+  anari::math::float3 eye{vEye.x, vEye.y, vEye.z};
+  anari::math::float3 dir{vDir.x, vDir.y, vDir.z};
+  anari::math::float3 up{vUp.x, vUp.y, vUp.z};
 
-  anari::setParameter(
-      m_device, m_orthoCamera, "position", m_arcball->eye_FixedDistance());
-  anari::setParameter(m_device, m_orthoCamera, "direction", m_arcball->dir());
-  anari::setParameter(m_device, m_orthoCamera, "up", m_arcball->up());
-  anari::setParameter(
-      m_device, m_orthoCamera, "height", m_arcball->distance() * 0.75f);
-
-  anari::setParameter(m_device,
-      m_perspCamera,
-      "aspect",
-      m_viewportSize.x / float(m_viewportSize.y));
-  anari::setParameter(m_device,
-      m_orthoCamera,
-      "aspect",
-      m_viewportSize.x / float(m_viewportSize.y));
+  anari::setParameter(m_device, m_perspCamera, "aspect", m_viewportSize.x / float(m_viewportSize.y));
+  anari::setParameter(m_device, m_perspCamera, "position", eye);
+  anari::setParameter(m_device, m_perspCamera, "direction", dir);
+  anari::setParameter(m_device, m_perspCamera, "up", up);
 
   auto radians = [](float degrees) -> float { return degrees * M_PI / 180.f; };
   anari::setParameter(m_device, m_perspCamera, "fovy", radians(m_fov));
 
   anari::commitParameters(m_device, m_perspCamera);
-  anari::commitParameters(m_device, m_orthoCamera);
 
-  return true;
+  m_viewChanged = false;
+  return;
 }
 
 void DRRViewport::updateImage()
@@ -335,6 +340,24 @@ void DRRViewport::cancelFrame()
   anari::discard(m_device, m_frame);
 }
 
+void DRRViewport::handleMouseDownEvent(visionaray::mouse_event const& event)
+{
+  for (auto& manip : m_manipulators)
+    manip->handle_mouse_down(event);
+}
+
+void DRRViewport::handleMouseUpEvent(visionaray::mouse_event const& event)
+{
+  for (auto& manip : m_manipulators)
+    manip->handle_mouse_up(event);
+}
+
+void DRRViewport::handleMouseMoveEvent(visionaray::mouse_event const& event)
+{
+  for (auto& manip : m_manipulators)
+    manip->handle_mouse_move(event);
+}
+
 void DRRViewport::ui_handleInput()
 {
   ImGuiIO &io = ImGui::GetIO();
@@ -347,50 +370,111 @@ void DRRViewport::ui_handleInput()
           && io.KeysDown[GLFW_KEY_LEFT_ALT]);
   const bool orbit = ImGui::IsMouseDown(ImGuiMouseButton_Left);
 
-  const bool anyMovement = dolly || pan || orbit;
+  if (!m_dolly && !m_pan && !m_orbit)
+    if (!ImGui::IsItemHovered() || !(dolly || pan || orbit))
+      return;
 
-  if (!anyMovement) {
-    m_manipulating = false;
-    m_previousMouse = anari::math::float2(-1);
-  } else if (ImGui::IsItemHovered() && !m_manipulating)
-    m_manipulating = true;
+  anari::math::float2 position;
+  std::memcpy(&position, &io.MousePos, sizeof(position));
+  auto windowOffset = ImGui::GetCursorScreenPos();
+  const visionaray::mouse::pos mousePos = {
+      static_cast<int>(m_viewportSize.x - position.x + windowOffset.x),
+      static_cast<int>(-position.y + windowOffset.y)};
 
-  if (m_mouseRotating && !orbit)
-    m_mouseRotating = false;
-
-  if (m_manipulating) {
-    anari::math::float2 position;
-    std::memcpy(&position, &io.MousePos, sizeof(position));
-
-    const anari::math::float2 mouse(position.x, position.y);
-
-    if (anyMovement && m_previousMouse != anari::math::float2(-1)) {
-      const anari::math::float2 prev = m_previousMouse;
-
-      const anari::math::float2 mouseFrom =
-          prev * 2.f / anari::math::float2(m_viewportSize);
-      const anari::math::float2 mouseTo =
-          mouse * 2.f / anari::math::float2(m_viewportSize);
-
-      const anari::math::float2 mouseDelta = mouseTo - mouseFrom;
-
-      if (mouseDelta != anari::math::float2(0.f)) {
-        if (dolly)
-          m_arcball->zoom(mouseDelta.y);
-        else if (pan)
-          m_arcball->pan(mouseDelta);
-        else if (orbit && !(pan || dolly)) {
-          if (!m_mouseRotating) {
-            m_arcball->startNewRotation();
-            m_mouseRotating = true;
-          }
-
-          m_arcball->rotate(mouseDelta);
-        }
-      }
+  // map buttons/keys
+  auto button = visionaray::mouse::button::NoButton;
+  auto modifier = visionaray::keyboard::key::NoKey;
+  if (dolly){
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Right)){      
+      button = visionaray::mouse::button::Right;
+      modifier = visionaray::keyboard::key::NoKey;
     }
+    else if ((ImGui::IsMouseDown(ImGuiMouseButton_Left)
+                 && io.KeysDown[GLFW_KEY_LEFT_SHIFT])) {
+      button = visionaray::mouse::button::Left;
+      modifier = visionaray::keyboard::key::Shift;
+    }
+  }
+  else if (pan) {
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)){      
+      button = visionaray::mouse::button::Middle;
+      modifier = visionaray::keyboard::key::NoKey;
+    }
+    else if ((ImGui::IsMouseDown(ImGuiMouseButton_Left)
+                 && io.KeysDown[GLFW_KEY_LEFT_ALT])) {
+      button = visionaray::mouse::button::Left;
+      modifier = visionaray::keyboard::key::Alt;
+    }
+  }
+  else if (orbit) {
+    button = visionaray::mouse::button::Left;
+    modifier = visionaray::keyboard::key::NoKey;
+  }
 
-    m_previousMouse = mouse;
+  if (dolly) {
+    if (m_dolly) {
+      //mouse move
+      handleMouseMoveEvent(visionaray::mouse_event(visionaray::mouse::Move, mousePos, m_button, visionaray::keyboard::NoKey));
+      m_viewChanged = true;
+    } else {
+      //onMouseDown
+      handleMouseDownEvent(visionaray::mouse_event(visionaray::mouse::ButtonDown, mousePos, button, modifier));
+      m_button = button;
+      m_modifier = modifier;
+      m_dolly = true;
+    }
+  } else {
+    if (m_dolly) {
+      //onMouseUp
+      handleMouseUpEvent(visionaray::mouse_event(visionaray::mouse::ButtonUp, mousePos, m_button, m_modifier));
+      m_button = visionaray::mouse::button::NoButton;
+      m_modifier = visionaray::keyboard::key::NoKey;
+      m_dolly = false;
+    }
+  }
+
+  if (pan) {
+    if (m_pan) {
+      //mouse move
+      handleMouseMoveEvent(visionaray::mouse_event(visionaray::mouse::Move, mousePos, m_button, visionaray::keyboard::NoKey));
+      m_viewChanged = true;
+    } else {
+      //onMouseDown
+      handleMouseDownEvent(visionaray::mouse_event(visionaray::mouse::ButtonDown, mousePos, button, modifier));
+      m_button = button;
+      m_modifier = modifier;
+      m_pan = true;
+    }
+  } else {
+    if (m_pan) {
+      //onMouseUp
+      handleMouseUpEvent(visionaray::mouse_event(visionaray::mouse::ButtonUp, mousePos, m_button, m_modifier));
+      m_button = visionaray::mouse::button::NoButton;
+      m_modifier = visionaray::keyboard::key::NoKey;
+      m_pan = false;
+    }
+  }
+
+  if (orbit) {
+    if (m_orbit) {
+      //mouse move
+      handleMouseMoveEvent(visionaray::mouse_event(visionaray::mouse::Move, mousePos, m_button, visionaray::keyboard::NoKey));
+      m_viewChanged = true;
+    } else {
+      //onMouseDown
+      handleMouseDownEvent(visionaray::mouse_event(visionaray::mouse::ButtonDown, mousePos, button, modifier));
+      m_button = button;
+      m_modifier = modifier;
+      m_orbit = true;
+    }
+  } else {
+    if (m_orbit) {
+      //onMouseUp
+      handleMouseUpEvent(visionaray::mouse_event(visionaray::mouse::ButtonUp, mousePos, m_button, m_modifier));
+      m_button = visionaray::mouse::button::NoButton;
+      m_modifier = visionaray::keyboard::key::NoKey;
+      m_orbit = false;
+    }
   }
 }
 
@@ -441,11 +525,6 @@ void DRRViewport::ui_contextMenu()
     ImGui::Text("Camera:");
     ImGui::Indent(INDENT_AMOUNT);
 
-    if (ImGui::Checkbox("orthographic", &m_useOrthoCamera))
-      updateFrame();
-
-    ImGui::BeginDisabled(m_useOrthoCamera);
-
     if (ImGui::SliderFloat("fov", &m_fov, 0.1f, 180.f)) {
       updateCamera(true);
       cancelFrame();
@@ -455,10 +534,10 @@ void DRRViewport::ui_contextMenu()
 
     ImGui::EndDisabled();
 
-    if (ImGui::Combo("up", &m_arcballUp, "+x\0+y\0+z\0-x\0-y\0-z\0\0")) {
-      m_arcball->setAxis(static_cast<manipulators::OrbitAxis>(m_arcballUp));
-      resetView();
-    }
+    // if (ImGui::Combo("up", &m_arcballUp, "+x\0+y\0+z\0-x\0-y\0-z\0\0")) {
+    //   m_arcball->setAxis(static_cast<manipulators::OrbitAxis>(m_arcballUp));
+    //   resetView();
+    // }
 
     if (ImGui::MenuItem("reset view"))
       resetView();
@@ -547,17 +626,14 @@ void DRRViewport::ui_overlay()
   ImGui::Checkbox("camera info", &showCameraInfo);
 
   if (showCameraInfo) {
-    const auto azel = m_arcball->azel();
-    const auto dist = m_arcball->distance();
-    const auto eye = m_arcball->eye();
-    const auto dir = m_arcball->dir();
-    const auto up = m_arcball->up();
-    ImGui::Text("  az: %f", azel.x);
-    ImGui::Text("  el: %f", azel.y);
-    ImGui::Text("dist: %f", dist);
-    ImGui::Text(" eye: (%f, %f, %f)", eye.x, eye.y, eye.z);
-    ImGui::Text(" dir: (%f, %f, %f)", dir.x, dir.y, dir.z);
-    ImGui::Text("  up: (%f, %f, %f)", up.x, up.y, up.z);
+    const auto eye = m_camera.eye();
+    const auto center = m_camera.center();
+    const auto dir = visionaray::normalize(center-eye);
+    const auto up = m_camera.up();
+    ImGui::Text("   eye: (%f, %f, %f)", eye.x, eye.y, eye.z);
+    ImGui::Text("center: (%f, %f, %f)", center.x, center.y, center.z);
+    ImGui::Text("   dir: (%f, %f, %f)", dir.x, dir.y, dir.z);
+    ImGui::Text("    up: (%f, %f, %f)", up.x, up.y, up.z);
   }
 
   ImGui::End();
