@@ -8,7 +8,6 @@
 #include <itkImageFileReader.h>
 #include "itkImageRegionIterator.h"
 // ours
-#include "attenuation.h"
 #include "FieldTypes.h"
 #include "readNifti.h"
 
@@ -30,33 +29,36 @@ bool NiftiReader::open(const char *fileName)
   field.dimZ = reader->GetImageIO()->GetDimensions(2);
   field.bytesPerCell = sizeof(float);
 
+  lacField.dimX = reader->GetImageIO()->GetDimensions(0);
+  lacField.dimY = reader->GetImageIO()->GetDimensions(1);
+  lacField.dimZ = reader->GetImageIO()->GetDimensions(2);
+  lacField.bytesPerCell = sizeof(float);
+
   std::cout << "[" << field.dimX << ", " << field.dimY << ", " << field.dimZ << "]\n";
 
   return true;
 }
 
-const StructuredField& NiftiReader::getField(int index)
+const StructuredField& NiftiReader::getField(int index, LacReader& lacReader)
 {
-  if (field.empty()) {
-    // transform from ct density to linear attenuation coefficient
-    std::cout << "\tTransform density values to linear attenuation coefficients\n";
-    using voxel_value_type = int16_t; //TODO
-    std::vector<voxel_value_type> buffer;
-    itk::ImageRegionConstIterator<img_t> inputIterator(img, img->GetLargestPossibleRegion());
-    while (!inputIterator.IsAtEnd())
-    {
-        buffer.push_back(inputIterator.Get());
-        ++inputIterator;
-    }
-    std::vector<float> attenuation_volume((size_t)field.dimX * field.dimY * field.dimZ);
-    for (size_t i=0; i<buffer.size(); ++i) {
-      attenuation_volume[i] = attenuation_lookup(buffer[i], tube_potential::TB120000EV);
-    }
-    size_t size = attenuation_volume.size() * sizeof(attenuation_volume[0]);
-    field.dataF32.resize(size);
-    memcpy((char *)field.dataF32.data(), attenuation_volume.data(), size);
-
-    field.dataRange = {0.f, 3.f}; //TODO
+  std::cout << "Transform density values to linear attenuation coefficients\n";
+  std::cout << "\t Using " << lacReader.m_lacLuts[lacReader.m_activeLut].name << "\n";
+  using voxel_value_type = int16_t; //TODO
+  std::vector<voxel_value_type> buffer;
+  itk::ImageRegionConstIterator<img_t> inputIterator(img, img->GetLargestPossibleRegion());
+  while (!inputIterator.IsAtEnd())
+  {
+      buffer.emplace_back(inputIterator.Get());
+      ++inputIterator;
   }
-  return field;
+  std::vector<float> attenuation_volume((size_t)field.dimX * field.dimY * field.dimZ);
+  for (size_t i=0; i<buffer.size(); ++i) {
+    attenuation_volume[i] = lacReader.lookup(buffer[i]);
+  }
+  size_t size = attenuation_volume.size() * sizeof(attenuation_volume[0]);
+  lacField.dataF32.resize(size);
+  memcpy((char *)lacField.dataF32.data(), attenuation_volume.data(), size);
+
+  lacField.dataRange = {0.f, 3.f}; //TODO
+  return lacField;
 }

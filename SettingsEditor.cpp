@@ -3,8 +3,8 @@
 
 #include "SettingsEditor.h"
 // std
-//#include <algorithm>
-//#include <vector>
+#include <algorithm>
+#include <vector>
 
 namespace windows {
 
@@ -14,26 +14,21 @@ SettingsEditor::SettingsEditor(const char *name)
 void SettingsEditor::buildUI()
 {
   if (m_settingsChanged) {
-    triggerUpdateCallback();
+    triggerUpdatePhotonEnergyCallback();
     m_settingsChanged = false;
   }
 
-//  //combo box
-//  std::vector<const char *> names(m_tfnsNames.size(), nullptr);
-//  std::transform(m_tfnsNames.begin(),
-//      m_tfnsNames.end(),
-//      names.begin(),
-//      [](const std::string &t) { return t.c_str(); });
-//
-//  int newMap = m_currentMap;
-//  if (ImGui::Combo("color map", &newMap, names.data(), names.size()))
-//    setMap(newMap);
-//
-//  ImGui::Separator();
+  //combo box
+  std::vector<const char *> names(m_names.size(), nullptr);
+  std::transform(m_names.begin(),
+      m_names.end(),
+      names.begin(),
+      [](const std::pair<size_t, std::string> &t) { return t.second.c_str(); });
+  int lacLutIdIndex = static_cast<int>(m_lacLutId);
+  if (ImGui::Combo("LAC LUT", &lacLutIdIndex, names.data(), names.size()))
+    setLacLut(static_cast<size_t>(lacLutIdIndex));
 
-//  drawEditor();
-//
-//  ImGui::Separator();
+  ImGui::Separator();
 
   m_settingsChanged |=
       ImGui::SliderFloat("energy [eV]", &m_photonEnergy, 0.f, 150000.f);
@@ -61,16 +56,48 @@ void SettingsEditor::buildUI()
 //  }
 }
 
-void SettingsEditor::setUpdateCallback(SettingsUpdateCallback cb)
+void SettingsEditor::setLacLut(size_t lacLutIndex)
 {
-  m_updateCallback = cb;
-  triggerUpdateCallback();
+  auto lacLutId = m_names[lacLutIndex].first;
+  if (lacLutId == m_lacLutId)
+    return;
+  m_lacLutId = lacLutId;
+  triggerUpdateLacLutCallback();
+  //TODO set photonEnergy
 }
 
-void SettingsEditor::triggerUpdateCallback()
+void SettingsEditor::setActiveLacLut(size_t id)
 {
-  if (m_updateCallback)
-    m_updateCallback(m_photonEnergy);
+  m_lacLutId = id;
+}
+
+void SettingsEditor::setLacLutNames(std::vector<std::pair<size_t, std::string>> names)
+{
+  m_names = names;
+}
+
+void SettingsEditor::setUpdateLacLutCallback(SettingsUpdateLacLutCallback cb)
+{
+  m_updateLacLutCallback = cb;
+  triggerUpdateLacLutCallback();
+}
+
+void SettingsEditor::setUpdatePhotonEnergyCallback(SettingsUpdatePhotonEnergyCallback cb)
+{
+  m_updatePhotonEnergyCallback = cb;
+  triggerUpdatePhotonEnergyCallback();
+}
+
+void SettingsEditor::triggerUpdateLacLutCallback()
+{
+  if (m_updateLacLutCallback)
+    m_updateLacLutCallback(m_lacLutId);
+}
+
+void SettingsEditor::triggerUpdatePhotonEnergyCallback()
+{
+  if (m_updatePhotonEnergyCallback)
+    m_updatePhotonEnergyCallback(m_photonEnergy);
 }
 
 } // namespace windows

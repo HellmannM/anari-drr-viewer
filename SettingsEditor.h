@@ -12,8 +12,10 @@
 
 namespace windows {
 
-using SettingsUpdateCallback =
+using SettingsUpdatePhotonEnergyCallback =
     std::function<void(const float &)>;
+using SettingsUpdateLacLutCallback =
+    std::function<void(const size_t &)>;
 
 class SettingsEditor : public anari_viewer::Window
 {
@@ -23,15 +25,25 @@ class SettingsEditor : public anari_viewer::Window
 
   void buildUI() override;
 
-  void setUpdateCallback(SettingsUpdateCallback cb);
-  void triggerUpdateCallback();
+  void setActiveLacLut(size_t id);
+  void setLacLutNames(std::vector<std::pair<size_t, std::string>> names);
+  void setLacLut(size_t lacLutIndex);
+  void setUpdateLacLutCallback(SettingsUpdateLacLutCallback cb);
+  void setUpdatePhotonEnergyCallback(SettingsUpdatePhotonEnergyCallback cb);
+  void triggerUpdateLacLutCallback();
+  void triggerUpdatePhotonEnergyCallback();
 
  private:
   // callback called whenever settings are updated
-  SettingsUpdateCallback m_updateCallback;
+  SettingsUpdatePhotonEnergyCallback m_updatePhotonEnergyCallback;
+  SettingsUpdateLacLutCallback m_updateLacLutCallback;
 
   // flag indicating transfer function has changed in UI
   bool m_settingsChanged{true};
+
+  // LAC LUTs
+  std::vector<std::pair<size_t, std::string>> m_names;
+  size_t m_lacLutId{0};
 
   // photon energy
   float m_photonEnergy{120000.f};

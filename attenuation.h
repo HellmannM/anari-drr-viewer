@@ -8,7 +8,7 @@ enum tube_potential
     TB13000EV = 0,
     TB13500EV = 1,
     TB14000EV = 2,
-    TB120000EV = 2
+    TB120000EV = 3
 };
 
 struct lut_entry { ssize_t density; float lac; };

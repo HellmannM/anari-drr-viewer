@@ -196,6 +196,12 @@ void DRRViewport::setPhotonEnergy(float energy)
 {
   anari::setParameter(m_device, m_renderers[m_currentRenderer], "photonEnergy", ANARI_FLOAT32, &energy);
   anari::commitParameters(m_device, m_renderers[m_currentRenderer]);
+  
+  m_viewChanged = true;
+  cancelFrame();
+  updateCamera(true);
+  startNewFrame();
+  updateImage();
 }
 
 void DRRViewport::reshape(anari::math::int2 newSize)

@@ -1,0 +1,123 @@
+{
+    "lac_luts":
+    [
+    {
+        "name": "13000eV",
+        "eV": 13000,
+        "lut":
+        [
+            {"density": 0,    "lac": 0.0},
+            {"density": 21,   "lac": 0.000289},
+            {"density": 282,  "lac": 0.0747},
+            {"density": 443,  "lac": 0.11205},
+            {"density": 909,  "lac": 0.13708},
+            {"density": 911,  "lac": 0.09568},   
+            {"density": 970,  "lac": 0.18216},
+            {"density": 1016, "lac": 0.153},
+            {"density": 1027, "lac": 0.230945},
+            {"density": 1029, "lac": 0.159355},
+            {"density": 1113, "lac": 0.17135},
+            {"density": 1114, "lac": 0.29268},
+            {"density": 1143, "lac": 0.1888},
+            {"density": 1228, "lac": 0.3744},
+            {"density": 1301, "lac": 0.5544},
+            {"density": 1329, "lac": 1.06485},
+            {"density": 1571, "lac": 0.90852},
+            {"density": 2034, "lac": 1.6224},
+            {"density": 2516, "lac": 2.484}
+        ]
+    },
+    {
+        "name": "13500eV",
+        "eV": 13500,
+        "lut":
+        [
+            {"density": 0,    "lac": 0.0},
+            {"density": 21,   "lac": 0.00026},
+            {"density": 282,  "lac": 0.0672},
+            {"density": 443,  "lac": 0.1008},
+            {"density": 909,  "lac": 0.1242},
+            {"density": 911,  "lac": 0.087492},
+            {"density": 970,  "lac": 0.16434},
+            {"density": 1016, "lac": 0.13872},
+            {"density": 1027, "lac": 0.207955},
+            {"density": 1029, "lac": 0.14413},
+            {"density": 1113, "lac": 0.1514},
+            {"density": 1114, "lac": 0.26244},
+            {"density": 1143, "lac": 0.1711},
+            {"density": 1228, "lac": 0.33813},
+            {"density": 1301, "lac": 0.4984},
+            {"density": 1329, "lac": 0.958365},
+            {"density": 1571, "lac": 0.8174},
+            {"density": 2034, "lac": 1.45704},
+            {"density": 2516, "lac": 2.244}
+        ]
+    },
+    {
+        "name": "14000eV",
+        "eV": 14000,
+        "lut":
+        [
+            {"density": 0,    "lac": 0.0},
+            {"density": 21,   "lac": 0.000235},
+            {"density": 282,  "lac": 0.0609},
+            {"density": 443,  "lac": 0.09135},
+            {"density": 909,  "lac": 0.11316},
+            {"density": 911,  "lac": 0.080224},
+            {"density": 970,  "lac": 0.14949},
+            {"density": 1016, "lac": 0.12648},
+            {"density": 1027, "lac": 0.1881},
+            {"density": 1029, "lac": 0.130935},
+            {"density": 1113, "lac": 0.1403},
+            {"density": 1114, "lac": 0.2376},
+            {"density": 1143, "lac": 0.15576},
+            {"density": 1228, "lac": 0.30537},
+            {"density": 1301, "lac": 0.45024},
+            {"density": 1329, "lac": 0.864475},
+            {"density": 1571, "lac": 0.73834},
+            {"density": 2034, "lac": 1.31508},
+            {"density": 2516, "lac": 2.02}
+        ]
+    },
+    {
+        "name": "120000eV",
+        "eV": 120000,
+        "lut":
+        [
+            {"density": -1024, "lac": 0.00},
+            {"density": -800,  "lac": 0.200},
+            {"density": -69,   "lac": 0.928},
+            {"density": 25,    "lac": 1.000},
+            {"density": 49,    "lac": 1.047},
+            {"density": 100,   "lac": 1.073},
+            {"density": 200,   "lac": 1.078},
+            {"density": 243,   "lac": 1.086},
+            {"density": 261,   "lac": 1.102},
+            {"density": 494,   "lac": 1.278},
+            {"density": 878,   "lac": 1.470},
+            {"density": 1313,  "lac": 1.695},
+            {"density": 3000,  "lac": 2.592}
+        ]
+    },
+    {
+        "name": "120000eV-shifted",
+        "eV": 120000,
+        "lut":
+        [
+            {"density": 0,    "lac": 0.0},
+            {"density": 224,  "lac": 0.200},
+            {"density": 955,  "lac": 0.928},
+            {"density": 1049, "lac": 1.000},
+            {"density": 1073, "lac": 1.047},
+            {"density": 1124, "lac": 1.073},
+            {"density": 1224, "lac": 1.078},
+            {"density": 1267, "lac": 1.086},
+            {"density": 1285, "lac": 1.102},
+            {"density": 1518, "lac": 1.278},
+            {"density": 1902, "lac": 1.470},
+            {"density": 2337, "lac": 1.695},
+            {"density": 4024, "lac": 2.592}
+        ]
+    }
+    ]
+}

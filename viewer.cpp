@@ -5,13 +5,12 @@
 #include "anari_viewer/Application.h"
 // glm
 #include "glm/gtc/matrix_transform.hpp"
-#ifdef HAVE_VISIONARAY
+// visionaray
 #include <common/image.h>
 #include <visionaray/pinhole_camera.h>
 #include <common/manip/arcball_manipulator.h>
 #include <common/manip/pan_manipulator.h>
 #include <common/manip/zoom_manipulator.h>
-#endif
 // std
 #include <algorithm>
 #include <iostream>
@@ -22,6 +21,7 @@
 #include "FieldTypes.h"
 #include "Image.h"
 #include "ImageViewport.h"
+#include "LacTransform.h"
 #include "prediction.h"
 #include "PredictionsEditor.h"
 #include "readRAW.h"
@@ -44,6 +44,8 @@ static int g_dimX = 0, g_dimY = 0, g_dimZ = 0;
 static unsigned g_bytesPerCell = 0;
 static float g_voxelRange[2];
 static std::string g_jsonfile;
+static std::string g_laclutfile;
+static size_t g_laclutid{0};
 
 static const char *g_defaultLayout =
     R"layout(
@@ -99,6 +101,7 @@ struct AppState
   anari::SpatialField field{nullptr};
   StructuredField sdata;
 #ifdef HAVE_ITK
+  LacReader lacReader;
   NiftiReader niftiReader;
 #endif
   RAWReader rawReader;
@@ -257,6 +260,11 @@ class Application : public anari_viewer::Application
 
     // Setup scene //
 
+    if (!g_laclutfile.empty())
+      m_state.lacReader.setFilename(g_laclutfile);
+    m_state.lacReader.read();
+    m_state.lacReader.setActiveLut(g_laclutid);
+
     if (g_dimX && g_dimY && g_dimZ && g_bytesPerCell
         && m_state.rawReader.open(
             g_filename.c_str(), g_dimX, g_dimY, g_dimZ, g_bytesPerCell)) {
@@ -307,7 +315,7 @@ class Application : public anari_viewer::Application
     }
 #ifdef HAVE_ITK
     else if (m_state.niftiReader.open(g_filename.c_str())) {
-      m_state.sdata = m_state.niftiReader.getField(0);
+      m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
       auto &data = m_state.sdata;
 
       auto field =
@@ -435,9 +443,101 @@ class Application : public anari_viewer::Application
     auto *imageViewport = new windows::ImageViewport(m_state.images);
 
     auto *seditor = new windows::SettingsEditor();
-    seditor->setUpdateCallback(
+    seditor->setLacLutNames(m_state.lacReader.getNames());
+    seditor->setActiveLacLut(m_state.lacReader.getActiveLut());
+    seditor->setUpdatePhotonEnergyCallback(
         [=](const float &photonEnergy) {
             viewport->setPhotonEnergy(photonEnergy);
+        });
+    seditor->setUpdateLacLutCallback(
+        [=](const size_t &lacLutId) {
+            m_state.lacReader.setActiveLut(lacLutId);
+
+            m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
+            auto &data = m_state.sdata;
+
+            auto field =
+                anari::newObject<anari::SpatialField>(device, "structuredRegular");
+
+            anari::Array3D scalar;
+            if (data.bytesPerCell == 1) {
+              scalar = anariNewArray3D(device,
+                  data.dataUI8.data(),
+                  0,
+                  0,
+                  ANARI_UFIXED8,
+                  data.dimX,
+                  data.dimY,
+                  data.dimZ);
+            } else if (data.bytesPerCell == 2) {
+              scalar = anariNewArray3D(device,
+                  data.dataUI16.data(),
+                  0,
+                  0,
+                  ANARI_UFIXED16,
+                  data.dimX,
+                  data.dimY,
+                  data.dimZ);
+            } else if (data.bytesPerCell == 4) {
+              scalar = anariNewArray3D(device,
+                  data.dataF32.data(),
+                  0,
+                  0,
+                  ANARI_FLOAT32,
+                  data.dimX,
+                  data.dimY,
+                  data.dimZ);
+            }
+
+            anari::setAndReleaseParameter(device, field, "data", scalar);
+            anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
+
+            anari::commitParameters(device, field);
+            m_state.field = field;
+
+            g_voxelRange[0] = data.dataRange.x;
+            g_voxelRange[1] = data.dataRange.y;
+
+            // Volume //
+
+            auto volume =
+                anari::newObject<anari::Volume>(device, "transferFunction1D");
+            anari::setParameter(device, volume, "value", m_state.field);
+            anari::setParameter(device, volume, "field", m_state.field);
+
+            {
+              std::vector<anari::math::float3> colors;
+              std::vector<float> opacities;
+
+              colors.emplace_back(0.f, 0.f, 1.f);
+              colors.emplace_back(0.f, 1.f, 0.f);
+              colors.emplace_back(1.f, 0.f, 0.f);
+
+              opacities.emplace_back(0.f);
+              opacities.emplace_back(1.f);
+
+              anari::setAndReleaseParameter(device,
+                  volume,
+                  "color",
+                  anari::newArray1D(device, colors.data(), colors.size()));
+              anari::setAndReleaseParameter(device,
+                  volume,
+                  "opacity",
+                  anari::newArray1D(device, opacities.data(), opacities.size()));
+              anariSetParameter(
+                  device, volume, "valueRange", ANARI_FLOAT32_BOX1, &g_voxelRange);
+            }
+
+            anari::commitParameters(device, volume);
+
+#if 1
+            anari::setAndReleaseParameter(
+                device, m_state.world, "volume", anari::newArray1D(device, &volume));
+            anari::release(device, volume);
+#endif
+
+            anari::commitParameters(device, m_state.world);
+
         });
 
     auto *peditor = new windows::PredictionsEditor(m_state.predictions);
@@ -498,6 +598,9 @@ static void printUsage()
             << "   [{--verbose|-v}] [{--debug|-g}]\n"
             << "   [{--library|-l} <ANARI library>]\n"
             << "   [{--trace|-t} <directory>]\n"
+            << "   [{--json|-j} <directory>]\n"
+            << "   [{--lacfile|--lac} <directory>]\n"
+            << "   [{--lut} <index>]\n"
             << "   [{--dims|-d} <dimx dimy dimz>]\n"
             << "   [{--type|-t} [{uint8|uint16|float32}]\n"
             << "   <volume file>\n";
@@ -538,6 +641,10 @@ static void parseCommandLine(int argc, char *argv[])
       }
     } else if (arg == "--json" || arg == "-j") {
       g_jsonfile = argv[++i];
+    } else if (arg == "--lacfile" || arg == "--lac") {
+      g_laclutfile = argv[++i];
+    } else if (arg == "--lut") {
+      g_laclutid = std::atoi(argv[++i]);
     } else
       g_filename = std::move(arg);
   }

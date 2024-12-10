@@ -8,11 +8,12 @@
 #include <itkImageFileReader.h>
 // ours
 #include "FieldTypes.h"
+#include "LacTransform.h"
 
 struct NiftiReader
 {
   bool open(const char *fileName);
-  const StructuredField &getField(int index = 0);
+  const StructuredField &getField(int index, LacReader& lacReader);
 
   using voxel_value_type = int16_t; //TODO
   using img_t = itk::Image<voxel_value_type, 3>;
@@ -21,4 +22,5 @@ struct NiftiReader
   typename reader_t::Pointer  reader;
   typename img_t::Pointer     img;
   StructuredField             field;
+  StructuredField             lacField;
 };
