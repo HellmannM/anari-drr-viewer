@@ -75,3 +75,5 @@ else()
     message(WARNING "Could not find visionaray. Generating without PNG support")
 endif()
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/LacLuts.json" "${CMAKE_BINARY_DIR}/LacLuts.json" COPYONLY)
+
