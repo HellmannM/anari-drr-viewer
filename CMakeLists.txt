@@ -14,6 +14,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 add_executable(${SUBPROJECT_NAME}
     ImageViewport.cpp
     LacTransform.cpp
+    Matcher.cpp
     PredictionsEditor.cpp
     SettingsEditor.cpp
     Viewport.cpp

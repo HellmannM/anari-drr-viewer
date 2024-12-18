@@ -22,6 +22,7 @@
 #include "Image.h"
 #include "ImageViewport.h"
 #include "LacTransform.h"
+#include "Matcher.h"
 #include "prediction.h"
 #include "PredictionsEditor.h"
 #include "readRAW.h"
@@ -46,6 +47,7 @@ static float g_voxelRange[2];
 static std::string g_jsonfile;
 static std::string g_laclutfile;
 static size_t g_laclutid{0};
+static std::vector<std::string> g_matcherLibraryNames{};
 
 static const char *g_defaultLayout =
     R"layout(
@@ -107,6 +109,7 @@ struct AppState
   RAWReader rawReader;
   prediction_container predictions;
   std::vector<Image> images;
+  MatchersWrapper matchers;
 };
 
 static void statusFunc(const void *userData,
@@ -257,6 +260,9 @@ class Application : public anari_viewer::Application
 
     m_state.device = device;
     m_state.world = anari::newObject<anari::World>(device);
+
+    // Matchers //
+    m_state.matchers.init(g_matcherLibraryNames);
 
     // Setup scene //
 
@@ -645,6 +651,8 @@ static void parseCommandLine(int argc, char *argv[])
       g_laclutfile = argv[++i];
     } else if (arg == "--lut") {
       g_laclutid = std::atoi(argv[++i]);
+    } else if (arg == "-m" || arg == "--matcher") {
+      g_matcherLibraryNames.emplace_back(argv[++i]);
     } else
       g_filename = std::move(arg);
   }
