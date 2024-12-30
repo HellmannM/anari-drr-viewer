@@ -607,6 +607,7 @@ static void printUsage()
             << "   [{--json|-j} <directory>]\n"
             << "   [{--lacfile|--lac} <directory>]\n"
             << "   [{--lut} <index>]\n"
+            << "   [{--matcher|-m} <directory>]\n"
             << "   [{--dims|-d} <dimx dimy dimz>]\n"
             << "   [{--type|-t} [{uint8|uint16|float32}]\n"
             << "   <volume file>\n";
