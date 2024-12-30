@@ -80,7 +80,7 @@ struct DRRViewport : public anari_viewer::Window
 
   bool m_showOverlay{true};
   int m_frameSamples{0};
-  bool m_singleShot{false};
+  bool m_singleShot{true};
 
   float m_fov{40.f};
 

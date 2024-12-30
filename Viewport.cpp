@@ -503,7 +503,7 @@ void DRRViewport::ui_contextMenu()
       for (int i = 0; i < m_rendererNames.size(); i++) {
         const auto& rendererName = m_rendererNames[i];
         if (ImGui::MenuItem(rendererName.c_str())) {
-          if ((rendererName == "DRR") || (rendererName == "drr"))
+          if ((rendererName == "DRR") || (rendererName == "drr") || (rendererName == "default"))
             m_singleShot = true;
           else
             m_singleShot = false;
