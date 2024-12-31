@@ -456,7 +456,7 @@ class Application : public anari_viewer::Application
             viewport->setPhotonEnergy(photonEnergy);
         });
     seditor->setUpdateLacLutCallback(
-        [=](const size_t &lacLutId) {
+        [=, this](const size_t &lacLutId) {
             m_state.lacReader.setActiveLut(lacLutId);
 
             m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
