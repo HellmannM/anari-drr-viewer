@@ -10,8 +10,18 @@
 
 namespace windows {
 
-PredictionsEditor::PredictionsEditor(const prediction_container& predictions, const char *name)
-    : Window(name, true), m_predictions(predictions){}
+PredictionsEditor::PredictionsEditor(
+    const prediction_container& predictions,
+    std::vector<std::string> matcherNames,
+    const char *name)
+    : Window(name, true), m_predictions(predictions), m_matcherIndex(0)
+{
+  m_matcherNames = std::vector<const char*>(matcherNames.size(), nullptr);
+  std::transform(matcherNames.begin(),
+      matcherNames.end(),
+      m_matcherNames.begin(),
+      [](const std::string &s) { return s.c_str(); });
+}
 
 void PredictionsEditor::buildUI()
 {
@@ -36,6 +46,22 @@ void PredictionsEditor::buildUI()
     const auto loadImage = "Load image " + std::to_string(i);
     if (ImGui::Button(loadImage.c_str())) {
       triggerShowImageCallback(i);
+    }
+  }
+
+  ImGui::Separator();
+
+  // Combo box for matcher type
+  if (!m_matcherNames.empty())
+  {
+    int matcherIndex = static_cast<int>(m_matcherIndex);
+    if (ImGui::Combo("Matcher Type", &matcherIndex, m_matcherNames.data(), m_matcherNames.size()))
+    {
+      if (matcherIndex != m_matcherIndex)
+      {
+        m_matcherIndex = matcherIndex;
+        triggerSetActiveMatcherIndexCallback(static_cast<size_t>(matcherIndex));
+      }
     }
   }
 
@@ -94,6 +120,11 @@ void PredictionsEditor::setShowImageCallback(ShowImageCallback cb)
   m_showImageCallback = cb;
 }
 
+void PredictionsEditor::setSetActiveMatcherIndexCallback(SetActiveMatcherIndexCallback cb)
+{
+  m_setActiveMatcherIndexCallback = cb;
+}
+
 void PredictionsEditor::triggerResetCameraCallback()
 {
   if (m_resetCameraCallback)
@@ -113,6 +144,12 @@ void PredictionsEditor::triggerShowImageCallback(size_t index)
 {
   if (m_showImageCallback)
     m_showImageCallback(index);
+}
+
+void PredictionsEditor::triggerSetActiveMatcherIndexCallback(size_t index)
+{
+  if (m_setActiveMatcherIndexCallback)
+    m_setActiveMatcherIndexCallback(index);
 }
 
 } // namespace windows

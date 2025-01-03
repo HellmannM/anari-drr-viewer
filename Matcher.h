@@ -42,9 +42,12 @@ struct MatchersWrapper
 
   void init(std::vector<std::string> &matcherLibraryNames);
   void destroy();
+  void setActiveMatcherIndex(size_t index);
 
   std::vector<void*> m_matcherLibraryHandles;
   std::vector<feature_matcher*> m_matchers;
   std::vector<std::string> m_matcherNames;
   std::vector<std::string> m_matcherDescriptions;
+  size_t m_activeMatcherIndex{0};
+  feature_matcher* m_activeMatcher{nullptr};
 };

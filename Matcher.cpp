@@ -41,6 +41,9 @@ void MatchersWrapper::init(std::vector<std::string> &matcherLibraryNames)
 
     fprintf(stdout, "Loaded Matcher %s: %s\n", m_matcherNames.back().c_str(), m_matcherDescriptions.back().c_str());
   }
+
+  if (!m_matchers.empty())
+    setActiveMatcherIndex(0);
 }
 
 void MatchersWrapper::destroy()
@@ -59,4 +62,12 @@ void MatchersWrapper::destroy()
   m_matcherLibraryHandles.clear();
   m_matcherNames.clear();
   m_matcherDescriptions.clear();
+}
+
+void MatchersWrapper::setActiveMatcherIndex(size_t index)
+{
+  if (index >= m_matchers.size())
+    return;
+  m_activeMatcherIndex = index;
+  m_activeMatcher = m_matchers[index];
 }

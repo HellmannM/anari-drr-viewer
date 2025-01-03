@@ -546,7 +546,7 @@ class Application : public anari_viewer::Application
 
         });
 
-    auto *peditor = new windows::PredictionsEditor(m_state.predictions);
+    auto *peditor = new windows::PredictionsEditor(m_state.predictions, m_state.matchers.m_matcherNames);
     peditor->setUpdateCameraCallback(
         [=](const anari::math::float3 &eye, 
             const anari::math::float3 &center,
@@ -556,6 +556,7 @@ class Application : public anari_viewer::Application
         });
     peditor->setResetCameraCallback([=](){ viewport->resetView(); });
     peditor->setShowImageCallback([=](size_t index){ imageViewport->showImage(index); });
+    peditor->setSetActiveMatcherIndexCallback([this](size_t index){ m_state.matchers.setActiveMatcherIndex(index); });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
