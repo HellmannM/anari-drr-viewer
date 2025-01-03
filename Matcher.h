@@ -11,26 +11,24 @@ struct feature_matcher
   enum PIXEL_TYPE
   {
     PIXEL_TYPE_UNKNOWN = 0,
-    RGBA = 1
-  };
-
-  enum DEPTH_TYPE
-  {
-    DEPTH_TYPE_UNKNOWN = 0,
-    FLOAT = 1,
+    RGBA = 1,
     FLOAT3 = 2
   };
 
-  virtual void set_reference_image(const std::vector<uint8_t> &data, size_t width, size_t height, PIXEL_TYPE pixel_type);
-  virtual void match(const std::vector<uint8_t> &data, size_t width, size_t height, PIXEL_TYPE pixel_type);
+  enum IMAGE_TYPE {
+      REFERENCE = 0,
+      QUERY = 1,
+      DEPTH3D = 2
+  };
+
+  virtual void set_image(const void* data,
+                         size_t width,
+                         size_t height,
+                         PIXEL_TYPE pixel_type,
+                         IMAGE_TYPE image_type,
+                         bool swizzle);
   virtual void calibrate(size_t width, size_t height, float fovy, float aspect);
-  virtual bool update_camera(const std::vector<float>& depth,
-                             const std::vector<float>& depth3D,
-                             size_t width,
-                             size_t height,
-                             DEPTH_TYPE depth_type,
-                             DEPTH_TYPE depth3D_type,
-                             std::array<float, 3>& eye,
+  virtual bool update_camera(std::array<float, 3>& eye,
                              std::array<float, 3>& center,
                              std::array<float, 3>& up);
 };
