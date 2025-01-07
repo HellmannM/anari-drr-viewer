@@ -187,6 +187,18 @@ void DRRViewport::setView(anari::math::float3 eye, anari::math::float3 center, a
   updateImage();
 }
 
+void DRRViewport::getView(anari::math::float3& eye, anari::math::float3& center, anari::math::float3& up, float& fovy, float& aspect)
+{
+  auto& e = m_camera.eye();
+  auto& c = m_camera.center();
+  auto& u = m_camera.up();
+  eye    = {e.x, e.y, e.z};
+  center = {c.x, c.y, c.z};
+  up     = {u.x, u.y, u.z};
+  fovy = m_camera.fovy();
+  aspect = m_camera.aspect();
+}
+
 anari::Device DRRViewport::device() const
 {
   return m_device;

@@ -10,9 +10,8 @@ struct feature_matcher
 {
   enum PIXEL_TYPE
   {
-    PIXEL_TYPE_UNKNOWN = 0,
-    RGBA = 1,
-    FLOAT3 = 2
+    RGBA = 0,
+    FLOAT3 = 1
   };
 
   enum IMAGE_TYPE {
@@ -27,11 +26,11 @@ struct feature_matcher
                          PIXEL_TYPE pixel_type,
                          IMAGE_TYPE image_type,
                          bool swizzle);
+  virtual void match();
   virtual void calibrate(size_t width, size_t height, float fovy, float aspect);
   virtual bool update_camera(std::array<float, 3>& eye,
                              std::array<float, 3>& center,
                              std::array<float, 3>& up);
-  virtual void match();
 };
 
 struct MatchersWrapper

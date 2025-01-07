@@ -595,7 +595,21 @@ class Application : public anari_viewer::Application
                                                        feature_matcher::PIXEL_TYPE::RGBA,
                                                        feature_matcher::IMAGE_TYPE::QUERY,
                                                        false /*swizzle*/);
+        // match
+        anari::math::float3 eye, center, up;
+        float fovy, aspect;
+        viewport->getView(eye, center, up, fovy, aspect);
+        m_state.matchers.getActiveMatcher()->calibrate(width, height, fovy, aspect);
         m_state.matchers.getActiveMatcher()->match();
+        // update view
+        std::array<float, 3> eyeArr{eye.x, eye.y, eye.z};
+        std::array<float, 3> centerArr{center.x, center.y, center.z};
+        std::array<float, 3> upArr{up.x, up.y, up.z};
+        m_state.matchers.getActiveMatcher()->update_camera(eyeArr, centerArr, upArr);
+        eye = anari::math::float3{eyeArr[0], eyeArr[1], eyeArr[2]};
+        center = anari::math::float3{centerArr[0], centerArr[1], centerArr[2]};
+        up = anari::math::float3{upArr[0], upArr[1], upArr[2]};
+        viewport->setView(eye, center, up);
         });
 
     anari_viewer::WindowArray windows;
