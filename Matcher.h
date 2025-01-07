@@ -31,6 +31,7 @@ struct feature_matcher
   virtual bool update_camera(std::array<float, 3>& eye,
                              std::array<float, 3>& center,
                              std::array<float, 3>& up);
+  virtual void match();
 };
 
 struct MatchersWrapper
@@ -41,6 +42,7 @@ struct MatchersWrapper
   void init(std::vector<std::string> &matcherLibraryNames);
   void destroy();
   void setActiveMatcherIndex(size_t index);
+  feature_matcher* getActiveMatcher();
 
   std::vector<void*> m_matcherLibraryHandles;
   std::vector<feature_matcher*> m_matchers;

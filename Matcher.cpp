@@ -13,7 +13,7 @@ void MatchersWrapper::init(std::vector<std::string> &matcherLibraryNames)
     void *handle = dlopen(lib.c_str(), RTLD_NOW);
     if (!handle) {
       fprintf(stderr, "Error: %s\n", dlerror());
-      fprintf(stderr, "Could not load %s", lib.c_str());
+      fprintf(stderr, "Could not load %s\n", lib.c_str());
       continue;
     }
 
@@ -70,4 +70,9 @@ void MatchersWrapper::setActiveMatcherIndex(size_t index)
     return;
   m_activeMatcherIndex = index;
   m_activeMatcher = m_matchers[index];
+}
+
+feature_matcher* MatchersWrapper::getActiveMatcher()
+{
+  return m_activeMatcher;
 }

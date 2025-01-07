@@ -204,6 +204,28 @@ void DRRViewport::setPhotonEnergy(float energy)
   updateImage();
 }
 
+bool DRRViewport::getFrame(std::vector<uint8_t>& color, std::vector<float>& depth3d, size_t& width, size_t& height)
+{
+    auto fb = anari::map<uint32_t>(m_device, m_frame, "channel.color");
+    auto db = anari::map<anari::math::float3>(m_device, m_frame, "channel.depth3D");
+
+    if (fb.data && db.data) {
+      width = m_viewportSize.x;
+      height = m_viewportSize.y;
+      const auto fbDataU8 = reinterpret_cast<const uint8_t*>(fb.data);
+      const auto dbDataFloat = reinterpret_cast<const float*>(db.data);
+      color = std::vector<uint8_t>(fbDataU8, fbDataU8 + width * height * 4);
+      depth3d = std::vector<float>(dbDataFloat, dbDataFloat + width * height * 3);
+    } else {
+      printf("mapped bad frame: %p | %i x %i\n", fb.data, fb.width, fb.height);
+      return false;
+    }
+
+    anari::unmap(m_device, m_frame, "channel.color");
+    anari::unmap(m_device, m_frame, "channel.depth3D");
+    return true;
+}
+
 void DRRViewport::reshape(anari::math::int2 newSize)
 {
   if (newSize.x <= 0 || newSize.y <= 0)
@@ -227,8 +249,8 @@ void DRRViewport::reshape(anari::math::int2 newSize)
   m_camera.set_viewport(0, 0, newSize.x, newSize.y);
   float fovy = m_camera.fovy();
   float aspect = newSize.x / static_cast<float>(newSize.y);
-  float z_near = m_camera.z_near();
-  float z_far = m_camera.z_far();
+  float z_near = std::max(m_camera.z_near(), 1.f);
+  float z_far = std::min(m_camera.z_far(), FLT_MAX);
   m_camera.perspective(fovy, aspect, z_near, z_far);
 
   updateFrame();
@@ -331,9 +353,6 @@ void DRRViewport::updateImage()
     }
 
     anari::unmap(m_device, m_frame, "channel.color");
-
-    auto db = anari::map<anari::math::float3>(m_device, m_frame, "channel.depth3D");
-    anari::unmap(m_device, m_frame, "channel.depth3D");
   }
 
   if (!m_currentlyRendering || m_frameCancelled)

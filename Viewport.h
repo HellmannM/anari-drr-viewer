@@ -43,6 +43,7 @@ struct DRRViewport : public anari_viewer::Window
   anari::Device device() const;
 
   void setPhotonEnergy(float energy);
+  bool getFrame(std::vector<uint8_t>& color, std::vector<float>& depth3d, size_t& width, size_t& height);
 
  private:
   void reshape(anari::math::int2 newWindowSize);

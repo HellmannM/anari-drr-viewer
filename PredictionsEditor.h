@@ -23,6 +23,9 @@ using UpdateCameraCallback =
 using ResetCameraCallback = std::function<void(void)>;
 using ShowImageCallback = std::function<void(size_t)>;
 using SetActiveMatcherIndexCallback = std::function<void(size_t)>;
+using LoadReferenceImageCallback = std::function<void(size_t)>;
+using LoadFramebufferAsReferenceImageCallback = std::function<void(void)>;
+using MatchCallback = std::function<void(void)>;
 
 class PredictionsEditor : public anari_viewer::Window
 {
@@ -39,6 +42,9 @@ class PredictionsEditor : public anari_viewer::Window
   void setResetCameraCallback(ResetCameraCallback cb);
   void setShowImageCallback(ShowImageCallback cb);
   void setSetActiveMatcherIndexCallback(SetActiveMatcherIndexCallback cb);
+  void setLoadReferenceImageCallback(LoadReferenceImageCallback cb);
+  void setLoadFramebufferAsReferenceImageCallback(LoadFramebufferAsReferenceImageCallback cb);
+  void setMatchCallback(MatchCallback cb);
   void triggerUpdateCameraCallback(
       const anari::math::float3& eye,
       const anari::math::float3& center,
@@ -46,6 +52,9 @@ class PredictionsEditor : public anari_viewer::Window
   void triggerResetCameraCallback();
   void triggerShowImageCallback(size_t index);
   void triggerSetActiveMatcherIndexCallback(size_t index);
+  void triggerLoadReferenceImageCallback(size_t index);
+  void triggerLoadFramebufferAsReferenceImageCallback();
+  void triggerMatchCallback();
 
  private:
   // callback called whenever new camera selected
@@ -56,6 +65,9 @@ class PredictionsEditor : public anari_viewer::Window
   ShowImageCallback m_showImageCallback;
   // callback called whenever a different matcher is selected
   SetActiveMatcherIndexCallback m_setActiveMatcherIndexCallback;
+  LoadReferenceImageCallback m_loadReferenceImageCallback;
+  LoadFramebufferAsReferenceImageCallback m_loadFramebufferAsReferenceImageCallback;
+  MatchCallback m_matchCallback;
 
   prediction_container m_predictions;
   size_t m_matcherIndex;

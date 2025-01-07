@@ -557,6 +557,46 @@ class Application : public anari_viewer::Application
     peditor->setResetCameraCallback([=](){ viewport->resetView(); });
     peditor->setShowImageCallback([=](size_t index){ imageViewport->showImage(index); });
     peditor->setSetActiveMatcherIndexCallback([this](size_t index){ m_state.matchers.setActiveMatcherIndex(index); });
+    peditor->setLoadReferenceImageCallback([=, this](size_t index){
+        auto& im = m_state.images[index];
+        m_state.matchers.getActiveMatcher()->set_image(im.data.data(),
+                                                       im.width,
+                                                       im.height,
+                                                       feature_matcher::PIXEL_TYPE::RGBA,
+                                                       feature_matcher::IMAGE_TYPE::REFERENCE,
+                                                       true /*swizzle*/);
+        });
+    peditor->setLoadFramebufferAsReferenceImageCallback([=, this](){
+        std::vector<uint8_t> fb;
+        std::vector<float> depth3d;
+        size_t width, height;
+        viewport->getFrame(fb, depth3d, width, height);
+        m_state.matchers.getActiveMatcher()->set_image(fb.data(),
+                                                       width,
+                                                       height,
+                                                       feature_matcher::PIXEL_TYPE::RGBA,
+                                                       feature_matcher::IMAGE_TYPE::REFERENCE,
+                                                       false /*swizzle*/);
+        });
+    peditor->setMatchCallback([=, this](){
+        std::vector<uint8_t> fb;
+        std::vector<float> depth3d;
+        size_t width, height;
+        viewport->getFrame(fb, depth3d, width, height);
+        m_state.matchers.getActiveMatcher()->set_image(depth3d.data(),
+                                                       width,
+                                                       height,
+                                                       feature_matcher::PIXEL_TYPE::FLOAT3,
+                                                       feature_matcher::IMAGE_TYPE::DEPTH3D,
+                                                       false /*swizzle*/);
+        m_state.matchers.getActiveMatcher()->set_image(fb.data(),
+                                                       width,
+                                                       height,
+                                                       feature_matcher::PIXEL_TYPE::RGBA,
+                                                       feature_matcher::IMAGE_TYPE::QUERY,
+                                                       false /*swizzle*/);
+        m_state.matchers.getActiveMatcher()->match();
+        });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);

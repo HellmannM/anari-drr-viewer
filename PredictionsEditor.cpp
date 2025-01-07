@@ -46,6 +46,7 @@ void PredictionsEditor::buildUI()
     const auto loadImage = "Load image " + std::to_string(i);
     if (ImGui::Button(loadImage.c_str())) {
       triggerShowImageCallback(i);
+      triggerLoadReferenceImageCallback(i);
     }
   }
 
@@ -67,42 +68,13 @@ void PredictionsEditor::buildUI()
 
   ImGui::Separator();
 
-//  if (ImGui::Button("manual reset +x")) {
-//    triggerUpdateCameraCallback(
-//        anari::math::float3{575.175049f, -622.799988f, 95.999924f},
-//        anari::math::float3{-0.342020f, 0.939693f, 0.f},
-//        anari::math::float3{-0.939693f, -0.342020f, 0.f});
-//  }
-//  if (ImGui::Button("manual reset +y")) {
-//    triggerUpdateCameraCallback(
-//        anari::math::float3{255.499924f, 575.175049f, -782.299988f},
-//        anari::math::float3{0.f, -0.342020f, 0.939693f},
-//        anari::math::float3{0.f, -0.939693f, -0.342020f});
-//  }
-//  if (ImGui::Button("manual reset +z")) {
-//    triggerUpdateCameraCallback(
-//        anari::math::float3{255.499924f, -622.799988f, 415.675079f},
-//        anari::math::float3{0.f, 0.939693f, -0.342020f},
-//        anari::math::float3{0.f, -0.342020f, -0.939693f});
-//  }
-//  if (ImGui::Button("manual reset -x")) {
-//    triggerUpdateCameraCallback(
-//        anari::math::float3{-64.175079f, 1133.800049f, 94.000076f},
-//        anari::math::float3{0.342020f, -0.939693f, 0.f},
-//        anari::math::float3{0.939693f, 0.342020f, 0.f});
-//  }
-//  if (ImGui::Button("manual reset -y")) {
-//    triggerUpdateCameraCallback(
-//        anari::math::float3{255.500076f, -64.175079f, 974.299988f},
-//        anari::math::float3{0.f, 0.342020f, -0.939693f},
-//        anari::math::float3{0.f, 0.939693f, 0.342020f});
-//  }
-//  if (ImGui::Button("manual reset -z")) {
-//    triggerUpdateCameraCallback(
-//        anari::math::float3{255.500076f, 1133.800049f, -223.675079f},
-//        anari::math::float3{0.f, -0.939693f, 0.342020f},
-//        anari::math::float3{0.f, 0.342020f, 0.939693f});
-//  }
+  if (ImGui::Button("Set fb as ref")) {
+    triggerLoadFramebufferAsReferenceImageCallback();
+  }
+
+  if (ImGui::Button("Match")) {
+    triggerMatchCallback();
+  }
 }
 
 void PredictionsEditor::setUpdateCameraCallback(UpdateCameraCallback cb)
@@ -123,6 +95,21 @@ void PredictionsEditor::setShowImageCallback(ShowImageCallback cb)
 void PredictionsEditor::setSetActiveMatcherIndexCallback(SetActiveMatcherIndexCallback cb)
 {
   m_setActiveMatcherIndexCallback = cb;
+}
+
+void PredictionsEditor::setLoadReferenceImageCallback(LoadReferenceImageCallback cb)
+{
+  m_loadReferenceImageCallback = cb;
+}
+
+void PredictionsEditor::setLoadFramebufferAsReferenceImageCallback(LoadFramebufferAsReferenceImageCallback cb)
+{
+  m_loadFramebufferAsReferenceImageCallback = cb;
+}
+
+void PredictionsEditor::setMatchCallback(MatchCallback cb)
+{
+  m_matchCallback = cb;
 }
 
 void PredictionsEditor::triggerResetCameraCallback()
@@ -150,6 +137,24 @@ void PredictionsEditor::triggerSetActiveMatcherIndexCallback(size_t index)
 {
   if (m_setActiveMatcherIndexCallback)
     m_setActiveMatcherIndexCallback(index);
+}
+
+void PredictionsEditor::triggerLoadReferenceImageCallback(size_t index)
+{
+  if (m_loadReferenceImageCallback)
+    m_loadReferenceImageCallback(index);
+}
+
+void PredictionsEditor::triggerLoadFramebufferAsReferenceImageCallback()
+{
+  if (m_loadFramebufferAsReferenceImageCallback)
+    m_loadFramebufferAsReferenceImageCallback();
+}
+
+void PredictionsEditor::triggerMatchCallback()
+{
+  if (m_matchCallback)
+    m_matchCallback();
 }
 
 } // namespace windows
