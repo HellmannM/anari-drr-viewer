@@ -71,6 +71,7 @@ class PredictionsEditor : public anari_viewer::Window
 
   prediction_container m_predictions;
   size_t m_matcherIndex;
+  std::vector<std::string> m_matcherNamesStr;
   std::vector<const char*> m_matcherNames;
 };
 

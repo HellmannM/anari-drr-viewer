@@ -14,11 +14,11 @@ PredictionsEditor::PredictionsEditor(
     const prediction_container& predictions,
     std::vector<std::string> matcherNames,
     const char *name)
-    : Window(name, true), m_predictions(predictions), m_matcherIndex(0)
+    : Window(name, true), m_predictions(predictions), m_matcherIndex(0), m_matcherNamesStr(matcherNames)
 {
-  m_matcherNames = std::vector<const char*>(matcherNames.size(), nullptr);
-  std::transform(matcherNames.begin(),
-      matcherNames.end(),
+  m_matcherNames = std::vector<const char*>(m_matcherNamesStr.size(), nullptr);
+  std::transform(m_matcherNamesStr.begin(),
+      m_matcherNamesStr.end(),
       m_matcherNames.begin(),
       [](const std::string &s) { return s.c_str(); });
 }
