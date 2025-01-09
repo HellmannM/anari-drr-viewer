@@ -6,9 +6,7 @@
 #include <string>
 //#include <vector>
 
-#ifdef HAVE_JSON
 #include <nlohmann/json.hpp>
-#endif
 
 #include "anari/anari_cpp/ext/linalg.h"
 
@@ -57,7 +55,6 @@ struct prediction_container
 
     bool load_json(std::string json_filename)
     {
-#ifdef HAVE_JSON
         std::ifstream json_file(json_filename);
         if (json_file.fail())
         {
@@ -91,10 +88,6 @@ struct prediction_container
             return false;
         }
         return true;
-#else
-        std::cerr << "ERROR: Can't load json file: please rebuild with nlohmann json enabled." << std::endl;
-        return false;
-#endif
     }
 
     bool load_json(std::string json_filename, float& fovx_, float& fovy_)

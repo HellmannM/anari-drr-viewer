@@ -10,14 +10,14 @@
 #include <string>
 #include <vector>
 
-namespace windows {
+namespace anari_viewer::windows {
 
 using SettingsUpdatePhotonEnergyCallback =
     std::function<void(const float &)>;
 using SettingsUpdateLacLutCallback =
     std::function<void(const size_t &)>;
 
-class SettingsEditor : public anari_viewer::Window
+class SettingsEditor : public anari_viewer::windows::Window
 {
  public:
   SettingsEditor(const char *name = "Settings Editor");
@@ -50,4 +50,4 @@ class SettingsEditor : public anari_viewer::Window
   float m_defaultPhotonEnergy{120000.f};
 };
 
-} // namespace windows
+} // namespace anari_viewer::windows

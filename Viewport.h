@@ -23,9 +23,9 @@
 #include <limits>
 #include <memory>
 
-namespace windows {
+namespace anari_viewer::windows {
 
-struct DRRViewport : public anari_viewer::Window
+struct DRRViewport : public anari_viewer::windows::Window
 {
   DRRViewport(anari::Device device, visionaray::pinhole_camera& camera, const char *name = "Viewport");
   ~DRRViewport();
@@ -96,7 +96,7 @@ struct DRRViewport : public anari_viewer::Window
   anari::Camera m_perspCamera{nullptr};
 
   std::vector<std::string> m_rendererNames;
-  std::vector<ui::ParameterList> m_rendererParameters;
+  std::vector<anari_viewer::ui::ParameterList> m_rendererParameters;
   std::vector<anari::Renderer> m_renderers;
   int m_currentRenderer{0};
 
@@ -114,4 +114,4 @@ struct DRRViewport : public anari_viewer::Window
   std::string m_contextMenuName;
 };
 
-} // namespace windows
+} // namespace anari_viewer::windows

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace windows {
+namespace anari_viewer::windows {
 
 PredictionsEditor::PredictionsEditor(
     const prediction_container& predictions,
@@ -157,4 +157,4 @@ void PredictionsEditor::triggerMatchCallback()
     m_matchCallback();
 }
 
-} // namespace windows
+} // namespace anari_viewer::windows

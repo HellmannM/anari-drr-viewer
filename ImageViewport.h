@@ -17,9 +17,9 @@
 // ours
 #include "Image.h"
 
-namespace windows {
+namespace anari_viewer::windows {
 
-class ImageViewport : public anari_viewer::Window
+class ImageViewport : public anari_viewer::windows::Window
 {
  public:
   ImageViewport(const std::vector<Image>& images, const char *name = "Image Viewport");
@@ -39,4 +39,4 @@ class ImageViewport : public anari_viewer::Window
   anari::math::int2 m_viewportSize{1920, 1080};
 };
 
-} // namespace windows
+} // namespace anari_viewer::windows

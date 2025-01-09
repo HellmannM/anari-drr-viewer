@@ -8,7 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace windows {
+namespace anari_viewer::windows {
 
 ImageViewport::ImageViewport(const std::vector<Image>& images, const char *name)
     : Window(name, true), m_images(images)
@@ -149,4 +149,4 @@ void ImageViewport::reshape(anari::math::int2 newSize)
     showImage(m_imageIndex);
 }
 
-} // namespace windows
+} // namespace anari_viewer::windows

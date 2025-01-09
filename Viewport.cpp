@@ -11,7 +11,7 @@
 // stb_image
 #include "stb_image_write.h"
 
-namespace windows {
+namespace anari_viewer::windows {
 
 ///////////////////////////////////////////////////////////////////////////////
 // DRRViewport definitions ///////////////////////////////////////////////////////
@@ -52,7 +52,7 @@ DRRViewport::DRRViewport(anari::Device device, visionaray::pinhole_camera &camer
     for (int i = 0; r_subtypes[i] != nullptr; i++) {
       std::string subtype = r_subtypes[i];
       auto parameters =
-          ui::parseParameters(m_device, ANARI_RENDERER, subtype.c_str());
+          anari_viewer::ui::parseParameters(m_device, ANARI_RENDERER, subtype.c_str());
       m_rendererNames.push_back(subtype);
       m_rendererParameters.push_back(parameters);
     }
@@ -552,7 +552,7 @@ void DRRViewport::ui_contextMenu()
       auto &parameters = m_rendererParameters[m_currentRenderer];
       auto renderer = m_renderers[m_currentRenderer];
       for (auto &p : parameters)
-        ui::buildUI(m_device, renderer, p);
+        anari_viewer::ui::buildUI(m_device, renderer, p);
       ImGui::EndMenu();
     }
 
@@ -676,4 +676,4 @@ void DRRViewport::ui_overlay()
   ImGui::End();
 }
 
-} // namespace windows
+} // namespace anari_viewer::windows

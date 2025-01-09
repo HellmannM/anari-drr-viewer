@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace windows {
+namespace anari_viewer::windows {
 
 SettingsEditor::SettingsEditor(const char *name)
     : Window(name, true) {}
@@ -100,4 +100,4 @@ void SettingsEditor::triggerUpdatePhotonEnergyCallback()
     m_updatePhotonEnergyCallback(m_photonEnergy);
 }
 
-} // namespace windows
+} // namespace anari_viewer::windows

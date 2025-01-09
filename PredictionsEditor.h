@@ -14,7 +14,7 @@
 
 #include "prediction.h"
 
-namespace windows {
+namespace anari_viewer::windows {
 
 using UpdateCameraCallback =
     std::function<void(const anari::math::float3&,
@@ -27,7 +27,7 @@ using LoadReferenceImageCallback = std::function<void(size_t)>;
 using LoadFramebufferAsReferenceImageCallback = std::function<void(void)>;
 using MatchCallback = std::function<void(void)>;
 
-class PredictionsEditor : public anari_viewer::Window
+class PredictionsEditor : public anari_viewer::windows::Window
 {
  public:
   PredictionsEditor(
@@ -75,4 +75,4 @@ class PredictionsEditor : public anari_viewer::Window
   std::vector<const char*> m_matcherNames;
 };
 
-} // namespace windows
+} // namespace anari_viewer::windows

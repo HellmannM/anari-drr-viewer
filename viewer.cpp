@@ -207,7 +207,7 @@ class Application : public anari_viewer::Application
 
   anari_viewer::WindowArray setupWindows() override
   {
-    ui::init();
+    anari_viewer::ui::init();
 
     // If file type is raw, try to guess dimensions and data type
     // (if not already set)
@@ -411,7 +411,6 @@ class Application : public anari_viewer::Application
 
     if (!g_jsonfile.empty())
       m_state.predictions = prediction_container(g_jsonfile);
-#ifdef HAVE_VISIONARAY
     // load images
     if (!m_state.predictions.predictions.empty())
     {
@@ -425,7 +424,6 @@ class Application : public anari_viewer::Application
         m_state.images.emplace_back(visionarayImage.width(), visionarayImage.height(), 4 /*TODO bpp*/, visionarayImage.data());
       }
     }
-#endif
 
 
     // ImGui //
@@ -438,7 +436,7 @@ class Application : public anari_viewer::Application
       ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
 
     m_state.camera = visionaray::pinhole_camera();
-    auto *viewport = new windows::DRRViewport(device, m_state.camera, "Viewport");
+    auto *viewport = new anari_viewer::windows::DRRViewport(device, m_state.camera, "Viewport");
     viewport->setWorld(m_state.world);
     viewport->addManipulator( std::make_shared<visionaray::arcball_manipulator>(m_state.camera, visionaray::mouse::Left) );
     viewport->addManipulator( std::make_shared<visionaray::pan_manipulator>(m_state.camera, visionaray::mouse::Middle) );
@@ -446,9 +444,9 @@ class Application : public anari_viewer::Application
     viewport->addManipulator( std::make_shared<visionaray::zoom_manipulator>(m_state.camera, visionaray::mouse::Right) );
     viewport->resetView();
 
-    auto *imageViewport = new windows::ImageViewport(m_state.images);
+    auto *imageViewport = new anari_viewer::windows::ImageViewport(m_state.images);
 
-    auto *seditor = new windows::SettingsEditor();
+    auto *seditor = new anari_viewer::windows::SettingsEditor();
     seditor->setLacLutNames(m_state.lacReader.getNames());
     seditor->setActiveLacLut(m_state.lacReader.getActiveLut());
     seditor->setUpdatePhotonEnergyCallback(
@@ -546,7 +544,7 @@ class Application : public anari_viewer::Application
 
         });
 
-    auto *peditor = new windows::PredictionsEditor(m_state.predictions, m_state.matchers.m_matcherNames);
+    auto *peditor = new anari_viewer::windows::PredictionsEditor(m_state.predictions, m_state.matchers.m_matcherNames);
     peditor->setUpdateCameraCallback(
         [=](const anari::math::float3 &eye, 
             const anari::math::float3 &center,
@@ -642,7 +640,7 @@ class Application : public anari_viewer::Application
     anari::release(m_state.device, m_state.field);
     anari::release(m_state.device, m_state.world);
     anari::release(m_state.device, m_state.device);
-    ui::shutdown();
+    anari_viewer::ui::shutdown();
   }
 
  private:
