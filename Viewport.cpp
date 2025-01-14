@@ -93,20 +93,21 @@ DRRViewport::~DRRViewport()
 void DRRViewport::buildUI()
 {
   ImVec2 _viewportSize = ImGui::GetContentRegionAvail();
-  anari::math::int2 viewportSize(_viewportSize.x, _viewportSize.y);
+  anari::math::int2 viewportSizeInt(_viewportSize.x, _viewportSize.y);
+  anari::math::float2 viewportSizeFloat(_viewportSize.x, _viewportSize.y);
 
-  if (m_viewportSize != viewportSize)
-    reshape(viewportSize);
+  if (m_viewportSize != viewportSizeInt)
+    reshape(viewportSizeInt);
 
   if (m_viewChanged || (!m_singleShot)) {
     updateCamera();
     updateImage();
   }
 
-  ImGui::Image((void *)(intptr_t)m_framebufferTexture,
-      ImGui::GetContentRegionAvail(),
-      ImVec2(1, 0),
-      ImVec2(0, 1));
+  anari::math::float2 scale = (viewportSizeFloat - viewportSizeInt) / viewportSizeFloat;
+  ImVec2 uv0(1.0, scale.y);
+  ImVec2 uv1(scale.x, 1.0);
+  ImGui::Image((void *)(intptr_t)m_framebufferTexture, ImGui::GetContentRegionAvail(), uv0, uv1);
 
   if (m_showOverlay)
     ui_overlay();
