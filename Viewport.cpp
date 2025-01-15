@@ -221,7 +221,7 @@ void DRRViewport::setPhotonEnergy(float energy)
 bool DRRViewport::getFrame(std::vector<uint8_t>& color, std::vector<float>& depth3d, size_t& width, size_t& height)
 {
     auto fb = anari::map<uint32_t>(m_device, m_frame, "channel.color");
-    auto db = anari::map<anari::math::float3>(m_device, m_frame, "channel.depth3D");
+    auto db = anari::map<anari::math::float3>(m_device, m_frame, "channel.origin");
 
     if (fb.data && db.data) {
       width = m_viewportSize.x;
@@ -236,7 +236,7 @@ bool DRRViewport::getFrame(std::vector<uint8_t>& color, std::vector<float>& dept
     }
 
     anari::unmap(m_device, m_frame, "channel.color");
-    anari::unmap(m_device, m_frame, "channel.depth3D");
+    anari::unmap(m_device, m_frame, "channel.origin");
     return true;
 }
 
