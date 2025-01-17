@@ -290,6 +290,8 @@ void DRRViewport::updateFrame()
       m_device, m_frame, "size", anari::math::uint2(m_viewportSize));
   anari::setParameter(
       m_device, m_frame, "channel.color", ANARI_UFIXED8_RGBA_SRGB);
+  anari::setParameter(
+      m_device, m_frame, "channel.origin", ANARI_FLOAT32_VEC3);
   anari::setParameter(m_device, m_frame, "accumulation", true);
   anari::setParameter(m_device, m_frame, "world", m_world);
   anari::setParameter(m_device, m_frame, "camera", m_perspCamera);
