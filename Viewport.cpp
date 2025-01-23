@@ -577,11 +577,6 @@ void DRRViewport::ui_contextMenu()
 
     ImGui::EndDisabled();
 
-    // if (ImGui::Combo("up", &m_arcballUp, "+x\0+y\0+z\0-x\0-y\0-z\0\0")) {
-    //   m_arcball->setAxis(static_cast<manipulators::OrbitAxis>(m_arcballUp));
-    //   resetView();
-    // }
-
     if (ImGui::MenuItem("reset view"))
       resetView();
 
