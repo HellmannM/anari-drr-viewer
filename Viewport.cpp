@@ -228,8 +228,8 @@ bool DRRViewport::getFrame(std::vector<uint8_t>& color, std::vector<float>& dept
       height = m_viewportSize.y;
       const auto fbDataU8 = reinterpret_cast<const uint8_t*>(fb.data);
       const auto dbDataFloat = reinterpret_cast<const float*>(db.data);
-      color = std::vector<uint8_t>(fbDataU8, fbDataU8 + width * height * 4);
-      depth3d = std::vector<float>(dbDataFloat, dbDataFloat + width * height * 3);
+      color = std::vector<uint8_t>(fbDataU8, fbDataU8 + width * height * sizeof(uint32_t)); //TODO
+      depth3d = std::vector<float>(dbDataFloat, dbDataFloat + width * height * sizeof(anari::math::float3)/4); //TODO
     } else {
       printf("mapped bad frame: %p | %i x %i\n", fb.data, fb.width, fb.height);
       return false;
