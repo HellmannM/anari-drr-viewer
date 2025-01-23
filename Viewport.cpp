@@ -5,6 +5,7 @@
 // Visionaray
 #include <common/input/keyboard.h>
 #include <common/input/mouse.h>
+#include <common/manip/arcball_manipulator.h>
 // std
 #include <cstring>
 #include <memory>
@@ -152,6 +153,13 @@ void DRRViewport::setCamera(visionaray::pinhole_camera &camera)
 
 void DRRViewport::resetView()
 {
+  for (auto& manip : m_manipulators)
+  {
+    auto arcballManip = dynamic_cast<visionaray::arcball_manipulator*>(&*manip);
+    if (arcballManip)
+      arcballManip->reset_arcball();
+  }
+
   float aspect = m_viewportSize.x / float(m_viewportSize.y);
   m_camera.perspective(45.0f * visionaray::constants::degrees_to_radians<float>(), aspect, 0.001f, 1000.0f);
 
