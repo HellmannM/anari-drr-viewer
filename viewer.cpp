@@ -359,6 +359,8 @@ class Application : public anari_viewer::Application
 
       anari::setAndReleaseParameter(device, field, "data", scalar);
       anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
+      float spacing[3]{data.spacingX, data.spacingY, data.spacingZ};
+      anari::setParameter(device, field, "spacing", ANARI_FLOAT32_VEC3, spacing);
 
       anari::commitParameters(device, field);
       m_state.field = field;
@@ -449,9 +451,15 @@ class Application : public anari_viewer::Application
     auto *seditor = new anari_viewer::windows::SettingsEditor();
     seditor->setLacLutNames(m_state.lacReader.getNames());
     seditor->setActiveLacLut(m_state.lacReader.getActiveLut());
+    seditor->setVoxelSpacing({m_state.sdata.spacingX, m_state.sdata.spacingY, m_state.sdata.spacingZ});
     seditor->setUpdatePhotonEnergyCallback(
         [=](const float &photonEnergy) {
             viewport->setPhotonEnergy(photonEnergy);
+        });
+    seditor->setUpdateVoxelSpacingCallback(
+        [=, this](const std::array<float, 3> &voxelSpacing) {
+            anari::setParameter(device, m_state.field, "spacing", ANARI_FLOAT32_VEC3, voxelSpacing.data());
+            anari::commitParameters(device, m_state.field);
         });
     seditor->setUpdateLacLutCallback(
         [=, this](const size_t &lacLutId) {

@@ -15,6 +15,9 @@ struct StructuredField
   int dimX{0};
   int dimY{0};
   int dimZ{0};
+  float spacingX{1.f};
+  float spacingY{1.f};
+  float spacingZ{1.f};
   unsigned bytesPerCell{0};
   struct
   {

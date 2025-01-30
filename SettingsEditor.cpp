@@ -33,6 +33,9 @@ void SettingsEditor::buildUI()
   m_settingsChanged |=
       ImGui::SliderFloat("energy [eV]", &m_photonEnergy, 0.f, 150000.f);
 
+  m_settingsChanged |=
+      ImGui::InputFloat3("voxel spacing [mm]", m_voxelSpacing, "%.5f");
+
   if (ImGui::Button("reset##energy")) {
     m_photonEnergy = m_defaultPhotonEnergy;
     m_settingsChanged = true;
@@ -71,6 +74,11 @@ void SettingsEditor::setActiveLacLut(size_t id)
   m_lacLutId = id;
 }
 
+void SettingsEditor::setVoxelSpacing(const std::array<float, 3> &voxelSpacing)
+{
+  std::copy(voxelSpacing.begin(), voxelSpacing.end(), m_voxelSpacing);
+}
+
 void SettingsEditor::setLacLutNames(std::vector<std::pair<size_t, std::string>> names)
 {
   m_names = names;
@@ -88,6 +96,12 @@ void SettingsEditor::setUpdatePhotonEnergyCallback(SettingsUpdatePhotonEnergyCal
   triggerUpdatePhotonEnergyCallback();
 }
 
+void SettingsEditor::setUpdateVoxelSpacingCallback(SettingsUpdateVoxelSpacingCallback cb)
+{
+  m_updateVoxelSpacingCallback = cb;
+  triggerUpdateVoxelSpacingCallback();
+}
+
 void SettingsEditor::triggerUpdateLacLutCallback()
 {
   if (m_updateLacLutCallback)
@@ -98,6 +112,14 @@ void SettingsEditor::triggerUpdatePhotonEnergyCallback()
 {
   if (m_updatePhotonEnergyCallback)
     m_updatePhotonEnergyCallback(m_photonEnergy);
+}
+
+void SettingsEditor::triggerUpdateVoxelSpacingCallback()
+{
+  if (m_updateVoxelSpacingCallback)
+  {
+    m_updateVoxelSpacingCallback({m_voxelSpacing[0], m_voxelSpacing[1], m_voxelSpacing[2]});
+  }
 }
 
 } // namespace anari_viewer::windows

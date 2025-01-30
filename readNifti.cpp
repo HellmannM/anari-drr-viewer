@@ -6,7 +6,8 @@
 #include <vector>
 // ITK
 #include <itkImageFileReader.h>
-#include "itkImageRegionIterator.h"
+#include <itkImageRegionIterator.h>
+#include <itkMetaDataObject.h>
 // ours
 #include "FieldTypes.h"
 #include "readNifti.h"
@@ -18,7 +19,7 @@ bool NiftiReader::open(const char *fileName)
     return false;
   }
 
-  std::cout << "Reading Nifi file... ";
+  std::cout << "Reading Nifi file...\n";
   reader = reader_t::New();
   reader->SetFileName(fileName);
   reader->Update();
@@ -27,14 +28,24 @@ bool NiftiReader::open(const char *fileName)
   field.dimX = reader->GetImageIO()->GetDimensions(0);
   field.dimY = reader->GetImageIO()->GetDimensions(1);
   field.dimZ = reader->GetImageIO()->GetDimensions(2);
+  field.spacingX = std::stof(dynamic_cast<const itk::MetaDataObject<std::string>*>
+                    (reader->GetMetaDataDictionary().Get("pixdim[1]"))->GetMetaDataObjectValue());
+  field.spacingY = std::stof(dynamic_cast<const itk::MetaDataObject<std::string>*>
+                    (reader->GetMetaDataDictionary().Get("pixdim[2]"))->GetMetaDataObjectValue());
+  field.spacingZ = std::stof(dynamic_cast<const itk::MetaDataObject<std::string>*>
+                    (reader->GetMetaDataDictionary().Get("pixdim[3]"))->GetMetaDataObjectValue());
   field.bytesPerCell = sizeof(float);
 
-  lacField.dimX = reader->GetImageIO()->GetDimensions(0);
-  lacField.dimY = reader->GetImageIO()->GetDimensions(1);
-  lacField.dimZ = reader->GetImageIO()->GetDimensions(2);
-  lacField.bytesPerCell = sizeof(float);
+  lacField.dimX = field.dimX;
+  lacField.dimY = field.dimY;
+  lacField.dimZ = field.dimZ;
+  lacField.spacingX = field.spacingX;
+  lacField.spacingY = field.spacingY;
+  lacField.spacingZ = field.spacingZ;
+  lacField.bytesPerCell = field.bytesPerCell;
 
-  std::cout << "[" << field.dimX << ", " << field.dimY << ", " << field.dimZ << "]\n";
+  std::cout << "dims:    [" << field.dimX << ", " << field.dimY << ", " << field.dimZ << "]\n";
+  std::cout << "spacing: [" << field.spacingX << ", " << field.spacingY << ", " << field.spacingZ << "]\n";
 
   return true;
 }
