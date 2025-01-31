@@ -15,6 +15,7 @@ void SettingsEditor::buildUI()
 {
   if (m_settingsChanged) {
     triggerUpdatePhotonEnergyCallback();
+    triggerUpdateVoxelSpacingCallback();
     m_settingsChanged = false;
   }
 
@@ -117,9 +118,7 @@ void SettingsEditor::triggerUpdatePhotonEnergyCallback()
 void SettingsEditor::triggerUpdateVoxelSpacingCallback()
 {
   if (m_updateVoxelSpacingCallback)
-  {
     m_updateVoxelSpacingCallback({m_voxelSpacing[0], m_voxelSpacing[1], m_voxelSpacing[2]});
-  }
 }
 
 } // namespace anari_viewer::windows

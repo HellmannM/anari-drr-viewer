@@ -50,10 +50,10 @@ class SettingsEditor : public anari_viewer::windows::Window
   // LAC LUTs
   std::vector<std::pair<size_t, std::string>> m_names;
   size_t m_lacLutId{0};
-
   // photon energy
   float m_photonEnergy{120000.f};
   float m_defaultPhotonEnergy{120000.f};
+  // voxel spacing
   float m_voxelSpacing[3]{1.f, 1.f, 1.f};
 };
 
