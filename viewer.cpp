@@ -444,6 +444,7 @@ class Application : public anari_viewer::Application
     viewport->addManipulator( std::make_shared<visionaray::pan_manipulator>(m_state.camera, visionaray::mouse::Middle) );
     viewport->addManipulator( std::make_shared<visionaray::pan_manipulator>(m_state.camera, visionaray::mouse::Left, visionaray::keyboard::Alt) );
     viewport->addManipulator( std::make_shared<visionaray::zoom_manipulator>(m_state.camera, visionaray::mouse::Right) );
+    viewport->setDefaultFovYRad(m_state.predictions.fovy);
     viewport->resetView();
 
     auto *imageViewport = new anari_viewer::windows::ImageViewport(m_state.images);
@@ -453,9 +454,7 @@ class Application : public anari_viewer::Application
     seditor->setActiveLacLut(m_state.lacReader.getActiveLut());
     seditor->setVoxelSpacing({m_state.sdata.spacingX, m_state.sdata.spacingY, m_state.sdata.spacingZ});
     seditor->setUpdatePhotonEnergyCallback(
-        [=](const float &photonEnergy) {
-            viewport->setPhotonEnergy(photonEnergy);
-        });
+        [=](const float &photonEnergy) { viewport->setPhotonEnergy(photonEnergy); });
     seditor->setUpdateVoxelSpacingCallback(
         [=, this](const std::array<float, 3> &voxelSpacing) {
             anari::setParameter(device, m_state.field, "spacing", ANARI_FLOAT32_VEC3, voxelSpacing.data());

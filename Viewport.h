@@ -40,6 +40,8 @@ struct DRRViewport : public anari_viewer::windows::Window
   void resetView();
   void setView(anari::math::float3 eye, anari::math::float3 center, anari::math::float3 up);
   void getView(anari::math::float3& eye, anari::math::float3& center, anari::math::float3& up, float& fovy, float& aspect);
+  void setDefaultFovYRad(float fovyRad);
+  void setDefaultFovYDeg(float fovyDeg);
   void setPhotonEnergy(float energy);
   bool getFrame(std::vector<uint8_t>& color, std::vector<float>& depth3d, size_t& width, size_t& height);
 
@@ -84,6 +86,7 @@ struct DRRViewport : public anari_viewer::windows::Window
   bool m_singleShot{true};
 
   float m_fov{40.f};
+  float m_defaultFov{40.f};
 
   // ANARI objects //
 

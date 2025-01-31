@@ -161,7 +161,8 @@ void DRRViewport::resetView()
   }
 
   float aspect = m_viewportSize.x / float(m_viewportSize.y);
-  m_camera.perspective(45.0f * visionaray::constants::degrees_to_radians<float>(), aspect, 0.001f, 1000.0f);
+  auto radians = [](float degrees) -> float { return degrees * M_PI / 180.f; };
+  m_camera.perspective(radians(m_defaultFov), aspect, 0.001f, 1000.0f);
 
   anari::math::float3 bounds[2] = {{0.f, 0.f, 0.f}, {1.f, 1.f, 1.f}};
 
@@ -207,6 +208,22 @@ void DRRViewport::getView(anari::math::float3& eye, anari::math::float3& center,
   up     = {u.x, u.y, u.z};
   fovy = m_camera.fovy();
   aspect = m_camera.aspect();
+}
+
+void DRRViewport::setDefaultFovYDeg(float fovyDeg)
+{
+  auto radians = [](float degrees) -> float { return degrees * M_PI / 180.f; };
+  m_defaultFov = fovyDeg;
+  m_fov = m_defaultFov;
+  m_camera.perspective(radians(fovyDeg), m_camera.aspect(), m_camera.z_near(), m_camera.z_far());
+}
+
+void DRRViewport::setDefaultFovYRad(float fovyRad)
+{
+  auto degrees = [](float radians) -> float { return radians * 180.f / M_PI; };
+  m_defaultFov = degrees(fovyRad);
+  m_fov = m_defaultFov;
+  m_camera.perspective(fovyRad, m_camera.aspect(), m_camera.z_near(), m_camera.z_far());
 }
 
 anari::Device DRRViewport::device() const
@@ -577,6 +594,8 @@ void DRRViewport::ui_contextMenu()
     ImGui::Indent(INDENT_AMOUNT);
 
     if (ImGui::SliderFloat("fov", &m_fov, 0.1f, 180.f)) {
+      auto radians = [](float degrees) -> float { return degrees * M_PI / 180.f; };
+      m_camera.perspective(radians(m_fov), m_camera.aspect(), m_camera.z_near(), m_camera.z_far());
       updateCamera(true);
       cancelFrame();
       startNewFrame();
