@@ -218,7 +218,7 @@ class Application : public anari_viewer::Application
     std::vector<visionaray::vector<4, visionaray::unorm<8>>> rgba(width * height);
     memcpy(rgba.data(), fb.data(), width * height * 4);
     std::vector<visionaray::vector<3, visionaray::unorm<8>>> rgb(width * height);
-    for (size_t i = 0; i < rgb.size(); ++i)
+    for (size_t i=0; i<rgb.size(); ++i)
     {
         rgb[i] = visionaray::vector<3, visionaray::unorm<8>>(rgba[i].x, rgba[i].y, rgba[i].z);
     }
@@ -250,8 +250,10 @@ class Application : public anari_viewer::Application
     std::vector<visionaray::vector<3, visionaray::unorm<8>>> flipped(width * height);
     for (int y = 0; y < height; ++y)
     {
-      for (int x = 0; x < width; ++x) {
-        flipped[y * width + x] = rgb[y * width + width - x];
+      for (int x = 0; x < width; ++x)
+      {
+        auto xx = width - x - 1;
+        flipped[y * width + x] = rgb[y * width + xx];
       }
     }
 
@@ -696,10 +698,20 @@ class Application : public anari_viewer::Application
     peditor->setSetActiveMatcherIndexCallback([this](size_t index){ m_state.matchers.setActiveMatcherIndex(index); });
     peditor->setLoadReferenceImageCallback([=, this](size_t index){
         auto& im = m_state.images[index];
+        feature_matcher::PIXEL_TYPE pixelType;
+        if (im.bpp == 3)
+          pixelType = feature_matcher::PIXEL_TYPE::RGB;
+        else if (im.bpp == 4)
+          pixelType = feature_matcher::PIXEL_TYPE::RGBA;
+        else
+        {
+          std::cerr << "Error: pixel type unsupported\n";
+          return;
+        }
         m_state.matchers.getActiveMatcher()->set_image(im.data.data(),
                                                        im.width,
                                                        im.height,
-                                                       feature_matcher::PIXEL_TYPE::RGBA,
+                                                       pixelType,
                                                        feature_matcher::IMAGE_TYPE::REFERENCE,
                                                        true /*swizzle*/);
         });

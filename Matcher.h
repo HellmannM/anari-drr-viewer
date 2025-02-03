@@ -11,7 +11,8 @@ struct feature_matcher
   enum PIXEL_TYPE
   {
     RGBA = 0,
-    FLOAT3 = 1
+    RGB = 1,
+    FLOAT3 = 2
   };
 
   enum IMAGE_TYPE {
