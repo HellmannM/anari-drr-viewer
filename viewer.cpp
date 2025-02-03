@@ -246,12 +246,21 @@ class Application : public anari_viewer::Application
 //        flipped[yy * width + x] = rgb[y * width + x];
 //      }
 //    }
+    // Flip horizontally
+    std::vector<visionaray::vector<3, visionaray::unorm<8>>> flipped(width * height);
+    for (int y = 0; y < height; ++y)
+    {
+      for (int x = 0; x < width; ++x) {
+        flipped[y * width + x] = rgb[y * width + width - x];
+      }
+    }
+
 
     visionaray::image img(
         width,
         height,
         visionaray::PF_RGB8,
-        reinterpret_cast<uint8_t const*>(rgb.data())
+        reinterpret_cast<uint8_t const*>(flipped.data())
         );
 
     int inc = 0;
@@ -516,12 +525,37 @@ class Application : public anari_viewer::Application
     {
       for (auto it = m_state.predictions.begin(); it != m_state.predictions.end(); ++it)
       {
+        if (!std::filesystem::exists(it->filename))
+        {
+          std::cerr << "File does not exist: " << it->filename << "\n";
+          continue;
+        }
         visionaray::image visionarayImage;
-        visionarayImage.load(it->filename);
+        if (!visionarayImage.load(it->filename))
+        {
+          std::cerr << "Could not load " << it->filename << "\n";
+          continue;
+        }
         std::cout << "Loaded " << it->filename << ": ("
             << visionarayImage.width() << "x" << visionarayImage.height()
             << ", " << visionarayImage.format() << ")\n";
-        m_state.images.emplace_back(visionarayImage.width(), visionarayImage.height(), 4 /*TODO bpp*/, visionarayImage.data());
+        size_t bpp{4};
+        switch (visionarayImage.format())
+        {
+          case visionaray::pixel_format::PF_RGB8:
+            bpp = 3;
+            break;
+          case visionaray::pixel_format::PF_RGBA8:
+            bpp = 4;
+            break;
+          default:
+            std::cerr << "ERROR: " << it->filename << " has unsupported pixel format.\n";
+            continue;
+        }
+        m_state.images.emplace_back(visionarayImage.width(),
+                                    visionarayImage.height(),
+                                    bpp,
+                                    visionarayImage.data());
       }
     }
 

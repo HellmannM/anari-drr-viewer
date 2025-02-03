@@ -50,7 +50,24 @@ void ImageViewport::showImage(size_t index)
 {
   if ((index >= m_images.size()) || (m_images[index].data.empty()))
     return;
-  if (m_images[index].bpp != 4) {
+
+  const uint8_t* imageData{nullptr};
+  std::vector<uint8_t> swizzledImageData;
+  if (m_images[index].bpp == 3) {
+    // convert to rgba first
+    swizzledImageData.resize(m_images[index].width * m_images[index].height * 4);
+    for (int i = 0; i < m_images[index].width * m_images[index].height; ++i) {
+        swizzledImageData[i * 4 + 0] = m_images[index].data.data()[i * 3 + 0];
+        swizzledImageData[i * 4 + 1] = m_images[index].data.data()[i * 3 + 1];
+        swizzledImageData[i * 4 + 2] = m_images[index].data.data()[i * 3 + 2];
+        swizzledImageData[i * 4 + 3] = 255;
+    }
+    imageData = swizzledImageData.data();
+  }
+  else if (m_images[index].bpp == 4) {
+    imageData = m_images[index].data.data();
+  }
+  else {
     printf("bad image: unsupported bpp = %lu\n", m_images[index].bpp);
     return;
   }
@@ -79,7 +96,7 @@ void ImageViewport::showImage(size_t index)
       m_images[index].height,
       GL_RGBA,
       GL_UNSIGNED_BYTE,
-      m_images[index].data.data());
+      imageData);
 
   // setup fb to render into m_framebufferTexture
   GLint oldFbo{0};
