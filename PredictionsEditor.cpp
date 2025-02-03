@@ -28,6 +28,9 @@ void PredictionsEditor::buildUI()
   if (ImGui::Button("reset view")) {
     triggerResetCameraCallback();
   }
+  if (ImGui::Button("export screenshot")) {
+    triggerExportScreenshotCallback();
+  }
 
   ImGui::Separator();
 
@@ -112,6 +115,11 @@ void PredictionsEditor::setMatchCallback(MatchCallback cb)
   m_matchCallback = cb;
 }
 
+void PredictionsEditor::setExportScreenshotCallback(ExportScreenshotCallback cb)
+{
+  m_exportScreenshotCallback = cb;
+}
+
 void PredictionsEditor::triggerResetCameraCallback()
 {
   if (m_resetCameraCallback)
@@ -155,6 +163,12 @@ void PredictionsEditor::triggerMatchCallback()
 {
   if (m_matchCallback)
     m_matchCallback();
+}
+
+void PredictionsEditor::triggerExportScreenshotCallback()
+{
+  if (m_exportScreenshotCallback)
+    m_exportScreenshotCallback();
 }
 
 } // namespace anari_viewer::windows

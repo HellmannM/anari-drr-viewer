@@ -8,6 +8,7 @@
 // visionaray
 #include <common/image.h>
 #include <visionaray/pinhole_camera.h>
+#include <visionaray/swizzle.h>
 #include <common/manip/arcball_manipulator.h>
 #include <common/manip/pan_manipulator.h>
 #include <common/manip/zoom_manipulator.h>
@@ -204,6 +205,103 @@ class Application : public anari_viewer::Application
  public:
   Application() = default;
   ~Application() override = default;
+
+  void screenshot(std::vector<uint8_t> &fb,
+                  size_t width,
+                  size_t height,
+                  anari::math::float3 eye,
+                  anari::math::float3 center,
+                  anari::math::float3 up,
+                  float fovy)
+  {
+    // Swizzle to RGB8 for compatibility with pnm image
+    std::vector<visionaray::vector<4, visionaray::unorm<8>>> rgba(width * height);
+    memcpy(rgba.data(), fb.data(), width * height * 4);
+    std::vector<visionaray::vector<3, visionaray::unorm<8>>> rgb(width * height);
+    for (size_t i = 0; i < rgb.size(); ++i)
+    {
+        rgb[i] = visionaray::vector<3, visionaray::unorm<8>>(rgba[i].x, rgba[i].y, rgba[i].z);
+    }
+
+//    if (rt.color_space() == host_device_rt::SRGB)
+//    {
+//        for (int y = 0; y < rt.height(); ++y)
+//        {
+//            for (int x = 0; x < rt.width(); ++x)
+//            {
+//                auto& color = rgb[y * rt.width() + x];
+//                color.x = powf(color.x, 1 / 2.2f);
+//                color.y = powf(color.y, 1 / 2.2f);
+//                color.z = powf(color.z, 1 / 2.2f);
+//            }
+//        }
+//    }
+
+//    // Flip so that origin is (top|left)
+//    std::vector<visionaray::vector<3, visionaray::unorm<8>>> flipped(width * height);
+//    for (int y = 0; y < height; ++y)
+//    {
+//      for (int x = 0; x < width; ++x) {
+//        int yy = height - y - 1;
+//        flipped[yy * width + x] = rgb[y * width + x];
+//      }
+//    }
+
+    visionaray::image img(
+        width,
+        height,
+        visionaray::PF_RGB8,
+        reinterpret_cast<uint8_t const*>(rgb.data())
+        );
+
+    int inc = 0;
+    std::string inc_str = "";
+    std::string screenshot_file_base{"screenshot"};
+    std::string filename = screenshot_file_base + inc_str + ".png";
+    while (std::filesystem::exists(filename))
+    {
+      ++inc;
+      inc_str = std::to_string(inc);
+      while (inc_str.length() < 4)
+        inc_str = std::string("0") + inc_str;
+      inc_str = std::string("-") + inc_str;
+      filename = screenshot_file_base + inc_str + ".png";
+    }
+
+    visionaray::image::save_option opt;
+    if (img.save(filename, {opt}))
+      std::cout << "Screenshot saved to file: " << filename << '\n';
+    else
+      std::cerr << "Error saving screenshot to file: " << filename << '\n';
+
+    // export camera
+    std::string json_filename{screenshot_file_base + inc_str + ".json"};
+    std::ofstream json_file(json_filename);
+    if (json_file.fail()) {
+      std::cerr << "ERROR: Could not open json file: " << json_filename << "\n"
+                << std::strerror(errno) << std::endl;
+      return;
+    }
+    try {
+      nlohmann::json data;
+      const auto fovx = fovy;
+      data["sensor"]["fov_x_rad"] = fovx;
+      data["sensor"]["fov_y_rad"] = fovy;
+      data["predictions"]["file"] = filename;
+      data["predictions"]["eye"]["x"] = eye.x;
+      data["predictions"]["eye"]["y"] = eye.y;
+      data["predictions"]["eye"]["z"] = eye.z;
+      data["predictions"]["center"]["x"] = center.x;
+      data["predictions"]["center"]["y"] = center.y;
+      data["predictions"]["center"]["z"] = center.z;
+      data["predictions"]["up"]["x"] = up.x;
+      data["predictions"]["up"]["y"] = up.y;
+      data["predictions"]["up"]["z"] = up.z;
+      json_file << data.dump(4);
+    } catch (...) {
+      std::cerr << "ERROR: Could not parse json file.\n" << std::endl;
+    }
+  }
 
   anari_viewer::WindowArray setupWindows() override
   {
@@ -615,6 +713,18 @@ class Application : public anari_viewer::Application
         center = anari::math::float3{centerArr[0], centerArr[1], centerArr[2]};
         up = anari::math::float3{upArr[0], upArr[1], upArr[2]};
         viewport->setView(eye, center, up);
+        });
+    peditor->setExportScreenshotCallback([=, this](){
+        // get camera
+        anari::math::float3 eye, center, up;
+        float fovy, aspect;
+        viewport->getView(eye, center, up, fovy, aspect);
+        // get frame
+        std::vector<uint8_t> fb;
+        std::vector<float> depth3d;
+        size_t width, height;
+        viewport->getFrame(fb, depth3d, width, height);
+        screenshot(fb, width, height, eye, center, up, fovy);
         });
 
     anari_viewer::WindowArray windows;
