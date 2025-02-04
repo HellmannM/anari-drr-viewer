@@ -223,29 +223,6 @@ class Application : public anari_viewer::Application
         rgb[i] = visionaray::vector<3, visionaray::unorm<8>>(rgba[i].x, rgba[i].y, rgba[i].z);
     }
 
-//    if (rt.color_space() == host_device_rt::SRGB)
-//    {
-//        for (int y = 0; y < rt.height(); ++y)
-//        {
-//            for (int x = 0; x < rt.width(); ++x)
-//            {
-//                auto& color = rgb[y * rt.width() + x];
-//                color.x = powf(color.x, 1 / 2.2f);
-//                color.y = powf(color.y, 1 / 2.2f);
-//                color.z = powf(color.z, 1 / 2.2f);
-//            }
-//        }
-//    }
-
-//    // Flip so that origin is (top|left)
-//    std::vector<visionaray::vector<3, visionaray::unorm<8>>> flipped(width * height);
-//    for (int y = 0; y < height; ++y)
-//    {
-//      for (int x = 0; x < width; ++x) {
-//        int yy = height - y - 1;
-//        flipped[yy * width + x] = rgb[y * width + x];
-//      }
-//    }
     // Flip horizontally
     std::vector<visionaray::vector<3, visionaray::unorm<8>>> flipped(width * height);
     for (int y = 0; y < height; ++y)
@@ -256,7 +233,6 @@ class Application : public anari_viewer::Application
         flipped[y * width + x] = rgb[y * width + xx];
       }
     }
-
 
     visionaray::image img(
         width,
@@ -314,6 +290,98 @@ class Application : public anari_viewer::Application
     }
   }
 
+  void commitField()
+  {
+    auto device = m_state.device;
+    auto &data = m_state.sdata;
+
+    auto field =
+        anari::newObject<anari::SpatialField>(device, "structuredRegular");
+
+    anari::Array3D scalar;
+    if (data.bytesPerCell == 1) {
+      scalar = anariNewArray3D(device,
+          data.dataUI8.data(),
+          0,
+          0,
+          ANARI_UFIXED8,
+          data.dimX,
+          data.dimY,
+          data.dimZ);
+    } else if (data.bytesPerCell == 2) {
+      scalar = anariNewArray3D(device,
+          data.dataUI16.data(),
+          0,
+          0,
+          ANARI_UFIXED16,
+          data.dimX,
+          data.dimY,
+          data.dimZ);
+    } else if (data.bytesPerCell == 4) {
+      scalar = anariNewArray3D(device,
+          data.dataF32.data(),
+          0,
+          0,
+          ANARI_FLOAT32,
+          data.dimX,
+          data.dimY,
+          data.dimZ);
+    }
+
+    anari::setAndReleaseParameter(device, field, "data", scalar);
+    anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
+    float spacing[3]{data.spacingX, data.spacingY, data.spacingZ};
+    anari::setParameter(device, field, "spacing", ANARI_FLOAT32_VEC3, spacing);
+
+    anari::commitParameters(device, field);
+    m_state.field = field;
+
+    g_voxelRange[0] = data.dataRange.x;
+    g_voxelRange[1] = data.dataRange.y;
+  }
+
+  void commitVolume()
+  {
+    auto device = m_state.device;
+
+    auto volume = anari::newObject<anari::Volume>(device, "transferFunction1D");
+    anari::setParameter(device, volume, "value", m_state.field);
+    anari::setParameter(device, volume, "field", m_state.field);
+
+    {
+      std::vector<anari::math::float3> colors;
+      std::vector<float> opacities;
+
+      colors.emplace_back(0.f, 0.f, 1.f);
+      colors.emplace_back(0.f, 1.f, 0.f);
+      colors.emplace_back(1.f, 0.f, 0.f);
+
+      opacities.emplace_back(0.f);
+      opacities.emplace_back(1.f);
+
+      anari::setAndReleaseParameter(device,
+          volume,
+          "color",
+          anari::newArray1D(device, colors.data(), colors.size()));
+      anari::setAndReleaseParameter(device,
+          volume,
+          "opacity",
+          anari::newArray1D(device, opacities.data(), opacities.size()));
+      anariSetParameter(
+          device, volume, "valueRange", ANARI_FLOAT32_BOX1, &g_voxelRange);
+    }
+
+    anari::commitParameters(device, volume);
+
+#if 1
+    anari::setAndReleaseParameter(
+        device, m_state.world, "volume", anari::newArray1D(device, &volume));
+    anari::release(device, volume);
+#endif
+
+    anari::commitParameters(device, m_state.world);
+  }
+
   anari_viewer::WindowArray setupWindows() override
   {
     anari_viewer::ui::init();
@@ -359,7 +427,6 @@ class Application : public anari_viewer::Application
     }
 
     // ANARI //
-
     initializeANARI();
 
     auto device = g_device;
@@ -374,152 +441,29 @@ class Application : public anari_viewer::Application
     m_state.matchers.init(g_matcherLibraryNames);
 
     // Setup scene //
-
     if (!g_laclutfile.empty())
       m_state.lacReader.setFilename(g_laclutfile);
     m_state.lacReader.read();
     m_state.lacReader.setActiveLut(g_laclutid);
 
+    // Field //
     if (g_dimX && g_dimY && g_dimZ && g_bytesPerCell
         && m_state.rawReader.open(
             g_filename.c_str(), g_dimX, g_dimY, g_dimZ, g_bytesPerCell)) {
       m_state.sdata = m_state.rawReader.getField(0);
-      auto &data = m_state.sdata;
-
-      auto field =
-          anari::newObject<anari::SpatialField>(device, "structuredRegular");
-
-      anari::Array3D scalar;
-      if (data.bytesPerCell == 1) {
-        scalar = anariNewArray3D(device,
-            data.dataUI8.data(),
-            0,
-            0,
-            ANARI_UFIXED8,
-            g_dimX,
-            g_dimY,
-            g_dimZ);
-      } else if (data.bytesPerCell == 2) {
-        scalar = anariNewArray3D(device,
-            data.dataUI16.data(),
-            0,
-            0,
-            ANARI_UFIXED16,
-            g_dimX,
-            g_dimY,
-            g_dimZ);
-      } else if (data.bytesPerCell == 4) {
-        scalar = anariNewArray3D(device,
-            data.dataF32.data(),
-            0,
-            0,
-            ANARI_FLOAT32,
-            g_dimX,
-            g_dimY,
-            g_dimZ);
-      }
-
-      anari::setAndReleaseParameter(device, field, "data", scalar);
-      anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
-
-      anari::commitParameters(device, field);
-      m_state.field = field;
-
-      g_voxelRange[0] = data.dataRange.x;
-      g_voxelRange[1] = data.dataRange.y;
+      commitField();
     }
 #ifdef HAVE_ITK
     else if (m_state.niftiReader.open(g_filename.c_str())) {
       m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
-      auto &data = m_state.sdata;
-
-      auto field =
-          anari::newObject<anari::SpatialField>(device, "structuredRegular");
-
-      anari::Array3D scalar;
-      if (data.bytesPerCell == 1) {
-        scalar = anariNewArray3D(device,
-            data.dataUI8.data(),
-            0,
-            0,
-            ANARI_UFIXED8,
-            data.dimX,
-            data.dimY,
-            data.dimZ);
-      } else if (data.bytesPerCell == 2) {
-        scalar = anariNewArray3D(device,
-            data.dataUI16.data(),
-            0,
-            0,
-            ANARI_UFIXED16,
-            data.dimX,
-            data.dimY,
-            data.dimZ);
-      } else if (data.bytesPerCell == 4) {
-        scalar = anariNewArray3D(device,
-            data.dataF32.data(),
-            0,
-            0,
-            ANARI_FLOAT32,
-            data.dimX,
-            data.dimY,
-            data.dimZ);
-      }
-
-      anari::setAndReleaseParameter(device, field, "data", scalar);
-      anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
-      float spacing[3]{data.spacingX, data.spacingY, data.spacingZ};
-      anari::setParameter(device, field, "spacing", ANARI_FLOAT32_VEC3, spacing);
-
-      anari::commitParameters(device, field);
-      m_state.field = field;
-
-      g_voxelRange[0] = data.dataRange.x;
-      g_voxelRange[1] = data.dataRange.y;
+      commitField();
     }
 #endif
 
     // Volume //
-
-    auto volume = anari::newObject<anari::Volume>(device, "transferFunction1D");
-    anari::setParameter(device, volume, "value", m_state.field);
-    anari::setParameter(device, volume, "field", m_state.field);
-
-    {
-      std::vector<anari::math::float3> colors;
-      std::vector<float> opacities;
-
-      colors.emplace_back(0.f, 0.f, 1.f);
-      colors.emplace_back(0.f, 1.f, 0.f);
-      colors.emplace_back(1.f, 0.f, 0.f);
-
-      opacities.emplace_back(0.f);
-      opacities.emplace_back(1.f);
-
-      anari::setAndReleaseParameter(device,
-          volume,
-          "color",
-          anari::newArray1D(device, colors.data(), colors.size()));
-      anari::setAndReleaseParameter(device,
-          volume,
-          "opacity",
-          anari::newArray1D(device, opacities.data(), opacities.size()));
-      anariSetParameter(
-          device, volume, "valueRange", ANARI_FLOAT32_BOX1, &g_voxelRange);
-    }
-
-    anari::commitParameters(device, volume);
-
-#if 1
-    anari::setAndReleaseParameter(
-        device, m_state.world, "volume", anari::newArray1D(device, &volume));
-    anari::release(device, volume);
-#endif
-
-    anari::commitParameters(device, m_state.world);
+    commitVolume();
 
     // Predictions from JSON //
-
     if (!g_jsonfile.empty())
       m_state.predictions = prediction_container(g_jsonfile);
     // load images
@@ -597,92 +541,9 @@ class Application : public anari_viewer::Application
     seditor->setUpdateLacLutCallback(
         [=, this](const size_t &lacLutId) {
             m_state.lacReader.setActiveLut(lacLutId);
-
             m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
-            auto &data = m_state.sdata;
-
-            auto field =
-                anari::newObject<anari::SpatialField>(device, "structuredRegular");
-
-            anari::Array3D scalar;
-            if (data.bytesPerCell == 1) {
-              scalar = anariNewArray3D(device,
-                  data.dataUI8.data(),
-                  0,
-                  0,
-                  ANARI_UFIXED8,
-                  data.dimX,
-                  data.dimY,
-                  data.dimZ);
-            } else if (data.bytesPerCell == 2) {
-              scalar = anariNewArray3D(device,
-                  data.dataUI16.data(),
-                  0,
-                  0,
-                  ANARI_UFIXED16,
-                  data.dimX,
-                  data.dimY,
-                  data.dimZ);
-            } else if (data.bytesPerCell == 4) {
-              scalar = anariNewArray3D(device,
-                  data.dataF32.data(),
-                  0,
-                  0,
-                  ANARI_FLOAT32,
-                  data.dimX,
-                  data.dimY,
-                  data.dimZ);
-            }
-
-            anari::setAndReleaseParameter(device, field, "data", scalar);
-            anari::setParameter(device, field, "filter", ANARI_STRING, "linear");
-
-            anari::commitParameters(device, field);
-            m_state.field = field;
-
-            g_voxelRange[0] = data.dataRange.x;
-            g_voxelRange[1] = data.dataRange.y;
-
-            // Volume //
-
-            auto volume =
-                anari::newObject<anari::Volume>(device, "transferFunction1D");
-            anari::setParameter(device, volume, "value", m_state.field);
-            anari::setParameter(device, volume, "field", m_state.field);
-
-            {
-              std::vector<anari::math::float3> colors;
-              std::vector<float> opacities;
-
-              colors.emplace_back(0.f, 0.f, 1.f);
-              colors.emplace_back(0.f, 1.f, 0.f);
-              colors.emplace_back(1.f, 0.f, 0.f);
-
-              opacities.emplace_back(0.f);
-              opacities.emplace_back(1.f);
-
-              anari::setAndReleaseParameter(device,
-                  volume,
-                  "color",
-                  anari::newArray1D(device, colors.data(), colors.size()));
-              anari::setAndReleaseParameter(device,
-                  volume,
-                  "opacity",
-                  anari::newArray1D(device, opacities.data(), opacities.size()));
-              anariSetParameter(
-                  device, volume, "valueRange", ANARI_FLOAT32_BOX1, &g_voxelRange);
-            }
-
-            anari::commitParameters(device, volume);
-
-#if 1
-            anari::setAndReleaseParameter(
-                device, m_state.world, "volume", anari::newArray1D(device, &volume));
-            anari::release(device, volume);
-#endif
-
-            anari::commitParameters(device, m_state.world);
-
+            commitField();
+            commitVolume();
         });
 
     auto *peditor = new anari_viewer::windows::PredictionsEditor(m_state.predictions, m_state.matchers.m_matcherNames);
