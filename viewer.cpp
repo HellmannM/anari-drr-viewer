@@ -641,6 +641,15 @@ class Application : public anari_viewer::Application
         viewport->getFrame(fb, depth3d, width, height);
         screenshot(fb, width, height, eye, center, up, fovy);
         });
+    peditor->setSaveCameraCallback([=, this](size_t index){
+        anari::math::float3 eye, center, up;
+        float fovy, aspect;
+        viewport->getView(eye, center, up, fovy, aspect);
+        m_state.predictions[index].refined_camera.eye = eye;
+        m_state.predictions[index].refined_camera.center = center;
+        m_state.predictions[index].refined_camera.up = up;
+        m_state.predictions[index].refined_camera.initialized = true;
+        });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);

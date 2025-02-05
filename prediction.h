@@ -10,18 +10,31 @@
 
 #include "anari/anari_cpp/ext/linalg.h"
 
-struct prediction
+struct cam
 {
-    std::string filename;
     anari::math::float3 eye;
     anari::math::float3 center;
     anari::math::float3 up;
+    bool initialized{false};
+};
+
+struct prediction
+{
+    std::string filename;
+    cam initial_camera;
+    cam refined_camera;
 
     prediction(std::string file,
                 float eye_x,    float eye_y,    float eye_z,
                 float center_x, float center_y, float center_z,
                 float up_x,     float up_y,     float up_z)
-        : filename(file), eye(eye_x, eye_y, eye_z), center(center_x, center_y, center_z), up(up_x, up_y, up_z) {}
+        : filename(file)
+    {
+        initial_camera.eye = {eye_x, eye_y, eye_z};
+        initial_camera.center = {center_x, center_y, center_z};
+        initial_camera.up = {up_x, up_y, up_z};
+        initial_camera.initialized = true;
+    }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const anari::math::float3& v)
@@ -31,7 +44,14 @@ inline std::ostream& operator<<(std::ostream& os, const anari::math::float3& v)
 
 inline std::ostream& operator<<(std::ostream& os, const prediction& p)
 {
-    return os << p.filename << "\neye: " << p.eye << "\ncenter: " << p.center << "\nup: " << p.up << "\n";
+    const auto& c1 = p.initial_camera;
+    const auto& c2 = p.refined_camera;
+    os << p.filename << "\n";
+    if (c1.initialized)
+        os << "initial camera: eye: " << c1.eye << "\ncenter: " << c1.center << "\nup: " << c1.up << "\n";
+    if (c2.initialized)
+        os << "refined camera: eye: " << c2.eye << "\ncenter: " << c2.center << "\nup: " << c2.up << "\n";
+    return os;
 }
 
 

@@ -14,7 +14,7 @@ PredictionsEditor::PredictionsEditor(
     const prediction_container& predictions,
     std::vector<std::string> matcherNames,
     const char *name)
-    : Window(name, true), m_predictions(predictions), m_matcherIndex(0), m_matcherNamesStr(matcherNames)
+    : Window(name, true), m_predictions(&predictions), m_matcherIndex(0), m_matcherNamesStr(matcherNames)
 {
   m_matcherNames = std::vector<const char*>(m_matcherNamesStr.size(), nullptr);
   std::transform(m_matcherNamesStr.begin(),
@@ -25,35 +25,63 @@ PredictionsEditor::PredictionsEditor(
 
 void PredictionsEditor::buildUI()
 {
-  if (ImGui::Button("reset view")) {
+  if (ImGui::Button("reset view"))
     triggerResetCameraCallback();
-  }
-  if (ImGui::Button("export screenshot")) {
+
+  if (ImGui::Button("export screenshot"))
     triggerExportScreenshotCallback();
-  }
 
   ImGui::Separator();
 
-  for (size_t i=0; i<m_predictions.predictions.size(); ++i)
+  auto numPredictions = m_predictions->predictions.size();
+  if (numPredictions > 0)
   {
-    // Button to load the camera
-    const auto loadCamera = "Load camera " + std::to_string(i);
-    if (ImGui::Button(loadCamera.c_str())) {
-      triggerUpdateCameraCallback(
-          m_predictions.predictions[i].eye,
-          m_predictions.predictions[i].center,
-          m_predictions.predictions[i].up);
+    ImGui::Text("Select image:");
+    if (ImGui::BeginTable("Images", numPredictions))
+    {
+      ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+      for (size_t i=0; i<numPredictions; ++i)
+      {
+        ImGui::TableNextColumn();
+        std::string itemid = std::to_string(i+1);
+        if (ImGui::Selectable(itemid.c_str(), i == m_selectedImage))
+        {
+          m_selectedImage = i;
+          triggerShowImageCallback(m_selectedImage);
+          triggerLoadReferenceImageCallback(m_selectedImage);
+        }
+      }
+      ImGui::PopStyleVar();
+      ImGui::EndTable();
     }
 
-    // Button to show the image in the ImageViewport
-    const auto loadImage = "Load image " + std::to_string(i);
-    if (ImGui::Button(loadImage.c_str())) {
-      triggerShowImageCallback(i);
-      triggerLoadReferenceImageCallback(i);
+    if (m_selectedImage < numPredictions)
+    {
+      if (ImGui::Button("Load camera from json"))
+      {
+        triggerUpdateCameraCallback(
+            m_predictions->predictions[m_selectedImage].initial_camera.eye,
+            m_predictions->predictions[m_selectedImage].initial_camera.center,
+            m_predictions->predictions[m_selectedImage].initial_camera.up);
+      }
+
+      if (ImGui::Button("Save current camera"))
+        triggerSaveCameraCallback(m_selectedImage);
+
+      if (m_predictions->predictions[m_selectedImage].refined_camera.initialized)
+      {
+        if (ImGui::Button("Load saved camera"))
+        {
+          triggerUpdateCameraCallback(
+              m_predictions->predictions[m_selectedImage].refined_camera.eye,
+              m_predictions->predictions[m_selectedImage].refined_camera.center,
+              m_predictions->predictions[m_selectedImage].refined_camera.up);
+        }
+      }
     }
+
+    ImGui::Separator();
   }
-
-  ImGui::Separator();
 
   // Combo box for matcher type
   if (!m_matcherNames.empty())
@@ -120,6 +148,11 @@ void PredictionsEditor::setExportScreenshotCallback(ExportScreenshotCallback cb)
   m_exportScreenshotCallback = cb;
 }
 
+void PredictionsEditor::setSaveCameraCallback(SaveCameraCallback cb)
+{
+  m_saveCameraCallback = cb;
+}
+
 void PredictionsEditor::triggerResetCameraCallback()
 {
   if (m_resetCameraCallback)
@@ -169,6 +202,12 @@ void PredictionsEditor::triggerExportScreenshotCallback()
 {
   if (m_exportScreenshotCallback)
     m_exportScreenshotCallback();
+}
+
+void PredictionsEditor::triggerSaveCameraCallback(size_t index)
+{
+  if (m_saveCameraCallback)
+    m_saveCameraCallback(index);
 }
 
 } // namespace anari_viewer::windows
