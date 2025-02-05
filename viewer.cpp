@@ -102,6 +102,7 @@ struct AppState
   anari::Device device{nullptr};
   anari::World world{nullptr};
   anari::SpatialField field{nullptr};
+  anari::Volume volume{nullptr};
   StructuredField sdata;
 #ifdef HAVE_ITK
   LacReader lacReader;
@@ -343,8 +344,10 @@ class Application : public anari_viewer::Application
   void commitVolume()
   {
     auto device = m_state.device;
-
-    auto volume = anari::newObject<anari::Volume>(device, "transferFunction1D");
+    auto& volume = m_state.volume;
+    
+    volume = anari::newObject<anari::Volume>(device, "transferFunction1D");
+    
     anari::setParameter(device, volume, "value", m_state.field);
     anari::setParameter(device, volume, "field", m_state.field);
 
@@ -540,10 +543,15 @@ class Application : public anari_viewer::Application
         });
     seditor->setUpdateLacLutCallback(
         [=, this](const size_t &lacLutId) {
-            m_state.lacReader.setActiveLut(lacLutId);
-            m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
-            commitField();
-            commitVolume();
+            if (m_state.volume)
+            {
+              m_state.lacReader.setActiveLut(lacLutId);
+              m_state.sdata = m_state.niftiReader.getField(0, m_state.lacReader);
+              commitField();
+              anari::setParameter(device, m_state.volume, "value", m_state.field);
+              anari::setParameter(device, m_state.volume, "field", m_state.field);
+              anari::commitParameters(device, m_state.volume);
+            }
         });
 
     auto *peditor = new anari_viewer::windows::PredictionsEditor(m_state.predictions, m_state.matchers.m_matcherNames);
