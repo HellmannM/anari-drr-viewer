@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "../Orbit.h"
 #include "../ui_anari.h"
 // glad
 #include "glad/glad.h"
@@ -99,7 +98,7 @@ struct DRRViewport : public anari_viewer::windows::Window
   anari::Camera m_perspCamera{nullptr};
 
   std::vector<std::string> m_rendererNames;
-  std::vector<anari_viewer::ui::ParameterList> m_rendererParameters;
+  std::vector<anari_viewer::ui::ParameterInfoList> m_rendererParameters;
   std::vector<anari::Renderer> m_renderers;
   int m_currentRenderer{0};
 

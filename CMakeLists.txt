@@ -2,7 +2,7 @@ set(glm_DIR ${CMAKE_CURRENT_LIST_DIR}/external/glm/lib/cmake/glm)
 find_package(glm REQUIRED)
 mark_as_advanced(glm_DIR)
 
-find_package(anari 0.11.1 REQUIRED COMPONENTS viewer)
+find_package(anari 0.12.1 REQUIRED COMPONENTS viewer)
 find_package(visionaray 0.4.2 REQUIRED)
 
 set(SUBPROJECT_NAME anariDRRViewer)
@@ -21,6 +21,7 @@ add_executable(${SUBPROJECT_NAME}
     Viewport.cpp
     viewer.cpp
 )
+include_directories("${ANARI_DATAROOTDIR}/../../include/anari/backend")
 target_link_libraries(${SUBPROJECT_NAME} glm::glm anari::anari_viewer)
 target_link_libraries(${SUBPROJECT_NAME} visionaray::visionaray_common)
 
