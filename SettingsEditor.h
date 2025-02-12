@@ -12,7 +12,9 @@
 
 namespace anari_viewer::windows {
 
-using SettingsUpdatePhotonEnergyCallback =
+using SettingsUpdateScatterFractionCallback =
+    std::function<void(const float &)>;
+using SettingsUpdateScatterSigmaCallback =
     std::function<void(const float &)>;
 using SettingsUpdateLacLutCallback =
     std::function<void(const size_t &)>;
@@ -32,15 +34,18 @@ class SettingsEditor : public anari_viewer::windows::Window
   void setLacLutNames(std::vector<std::pair<size_t, std::string>> names);
   void setLacLut(size_t lacLutIndex);
   void setUpdateLacLutCallback(SettingsUpdateLacLutCallback cb);
-  void setUpdatePhotonEnergyCallback(SettingsUpdatePhotonEnergyCallback cb);
+  void setUpdateScatterFractionCallback(SettingsUpdateScatterFractionCallback cb);
+  void setUpdateScatterSigmaCallback(SettingsUpdateScatterSigmaCallback cb);
   void setUpdateVoxelSpacingCallback(SettingsUpdateVoxelSpacingCallback cb);
   void triggerUpdateLacLutCallback();
-  void triggerUpdatePhotonEnergyCallback();
+  void triggerUpdateScatterFractionCallback();
+  void triggerUpdateScatterSigmaCallback();
   void triggerUpdateVoxelSpacingCallback();
 
  private:
   // callback called whenever settings are updated
-  SettingsUpdatePhotonEnergyCallback m_updatePhotonEnergyCallback;
+  SettingsUpdateScatterFractionCallback m_updateScatterFractionCallback;
+  SettingsUpdateScatterSigmaCallback m_updateScatterSigmaCallback;
   SettingsUpdateLacLutCallback m_updateLacLutCallback;
   SettingsUpdateVoxelSpacingCallback m_updateVoxelSpacingCallback;
 
@@ -50,9 +55,9 @@ class SettingsEditor : public anari_viewer::windows::Window
   // LAC LUTs
   std::vector<std::pair<size_t, std::string>> m_names;
   size_t m_lacLutId{0};
-  // photon energy
-  float m_photonEnergy{120000.f};
-  float m_defaultPhotonEnergy{120000.f};
+  // scatter
+  float m_scatterFraction{0.5f};
+  float m_scatterSigma{50.f};
   // voxel spacing
   float m_voxelSpacing[3]{1.f, 1.f, 1.f};
 };

@@ -231,9 +231,21 @@ anari::Device DRRViewport::device() const
   return m_device;
 }
 
-void DRRViewport::setPhotonEnergy(float energy)
+void DRRViewport::setScatterFraction(float scatterFraction)
 {
-  anari::setParameter(m_device, m_renderers[m_currentRenderer], "photonEnergy", ANARI_FLOAT32, &energy);
+  anari::setParameter(m_device, m_renderers[m_currentRenderer], "scatterFraction", ANARI_FLOAT32, &scatterFraction);
+  anari::commitParameters(m_device, m_renderers[m_currentRenderer]);
+  
+  m_viewChanged = true;
+  cancelFrame();
+  updateCamera(true);
+  startNewFrame();
+  updateImage();
+}
+
+void DRRViewport::setScatterSigma(float scatterSigma)
+{
+  anari::setParameter(m_device, m_renderers[m_currentRenderer], "scatterSigma", ANARI_FLOAT32, &scatterSigma);
   anari::commitParameters(m_device, m_renderers[m_currentRenderer]);
   
   m_viewChanged = true;

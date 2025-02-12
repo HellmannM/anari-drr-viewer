@@ -14,7 +14,8 @@ SettingsEditor::SettingsEditor(const char *name)
 void SettingsEditor::buildUI()
 {
   if (m_settingsChanged) {
-    triggerUpdatePhotonEnergyCallback();
+    triggerUpdateScatterFractionCallback();
+    triggerUpdateScatterSigmaCallback();
     triggerUpdateVoxelSpacingCallback();
     m_settingsChanged = false;
   }
@@ -32,15 +33,13 @@ void SettingsEditor::buildUI()
   ImGui::Separator();
 
   m_settingsChanged |=
-      ImGui::SliderFloat("energy [eV]", &m_photonEnergy, 0.f, 150000.f);
+      ImGui::SliderFloat("scatter fraction", &m_scatterFraction, 0.f, 1.f);
+
+  m_settingsChanged |=
+      ImGui::SliderFloat("scatter sigma", &m_scatterSigma, 0.f, 1000.f);
 
   m_settingsChanged |=
       ImGui::InputFloat3("voxel spacing [mm]", m_voxelSpacing, "%.5f");
-
-  if (ImGui::Button("reset##energy")) {
-    m_photonEnergy = m_defaultPhotonEnergy;
-    m_settingsChanged = true;
-  }
 
   ImGui::Separator();
 
@@ -67,7 +66,6 @@ void SettingsEditor::setLacLut(size_t lacLutIndex)
     return;
   m_lacLutId = lacLutId;
   triggerUpdateLacLutCallback();
-  //TODO set photonEnergy
 }
 
 void SettingsEditor::setActiveLacLut(size_t id)
@@ -91,10 +89,16 @@ void SettingsEditor::setUpdateLacLutCallback(SettingsUpdateLacLutCallback cb)
   triggerUpdateLacLutCallback();
 }
 
-void SettingsEditor::setUpdatePhotonEnergyCallback(SettingsUpdatePhotonEnergyCallback cb)
+void SettingsEditor::setUpdateScatterFractionCallback(SettingsUpdateScatterFractionCallback cb)
 {
-  m_updatePhotonEnergyCallback = cb;
-  triggerUpdatePhotonEnergyCallback();
+  m_updateScatterFractionCallback = cb;
+  triggerUpdateScatterFractionCallback();
+}
+
+void SettingsEditor::setUpdateScatterSigmaCallback(SettingsUpdateScatterSigmaCallback cb)
+{
+  m_updateScatterSigmaCallback = cb;
+  triggerUpdateScatterSigmaCallback();
 }
 
 void SettingsEditor::setUpdateVoxelSpacingCallback(SettingsUpdateVoxelSpacingCallback cb)
@@ -109,10 +113,16 @@ void SettingsEditor::triggerUpdateLacLutCallback()
     m_updateLacLutCallback(m_lacLutId);
 }
 
-void SettingsEditor::triggerUpdatePhotonEnergyCallback()
+void SettingsEditor::triggerUpdateScatterFractionCallback()
 {
-  if (m_updatePhotonEnergyCallback)
-    m_updatePhotonEnergyCallback(m_photonEnergy);
+  if (m_updateScatterFractionCallback)
+    m_updateScatterFractionCallback(m_scatterFraction);
+}
+
+void SettingsEditor::triggerUpdateScatterSigmaCallback()
+{
+  if (m_updateScatterSigmaCallback)
+    m_updateScatterSigmaCallback(m_scatterSigma);
 }
 
 void SettingsEditor::triggerUpdateVoxelSpacingCallback()

@@ -534,8 +534,10 @@ class Application : public anari_viewer::Application
     seditor->setLacLutNames(m_state.lacReader.getNames());
     seditor->setActiveLacLut(m_state.lacReader.getActiveLut());
     seditor->setVoxelSpacing({m_state.sdata.spacingX, m_state.sdata.spacingY, m_state.sdata.spacingZ});
-    seditor->setUpdatePhotonEnergyCallback(
-        [=](const float &photonEnergy) { viewport->setPhotonEnergy(photonEnergy); });
+    seditor->setUpdateScatterFractionCallback(
+        [=](const float &scatterFraction) { viewport->setScatterFraction(scatterFraction); });
+    seditor->setUpdateScatterSigmaCallback(
+        [=](const float &scatterSigma) { viewport->setScatterSigma(scatterSigma); });
     seditor->setUpdateVoxelSpacingCallback(
         [=, this](const std::array<float, 3> &voxelSpacing) {
             anari::setParameter(device, m_state.field, "spacing", ANARI_FLOAT32_VEC3, voxelSpacing.data());

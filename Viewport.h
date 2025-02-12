@@ -41,7 +41,8 @@ struct DRRViewport : public anari_viewer::windows::Window
   void getView(anari::math::float3& eye, anari::math::float3& center, anari::math::float3& up, float& fovy, float& aspect);
   void setDefaultFovYRad(float fovyRad);
   void setDefaultFovYDeg(float fovyDeg);
-  void setPhotonEnergy(float energy);
+  void setScatterFraction(float scatterFraction);
+  void setScatterSigma(float scatterSigma);
   bool getFrame(std::vector<uint8_t>& color, std::vector<float>& depth3d, size_t& width, size_t& height);
 
   anari::Device device() const;
