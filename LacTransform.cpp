@@ -35,7 +35,7 @@ void LacReader::read()
     for (auto &p : data["lac_luts"]) {
       LacLut lacLut;
       lacLut.name = p["name"];
-      lacLut.eV = p["eV"];
+      lacLut.vp = p["Vp"];
       for (auto &e : p["lut"])
         lacLut.lut.emplace_back(e["density"], e["lac"]);
       m_lacLuts.push_back(lacLut);
@@ -48,7 +48,7 @@ void LacReader::read()
 
   std::cout << "Read LAC LUTs:\n";
   for (auto &lut : m_lacLuts)
-    std::cout << lut.name << " (" << lut.eV << "eV)\n";
+    std::cout << lut.name << " (" << lut.vp << "Vp)\n";
 }
 
 std::vector<std::pair<size_t, std::string>> LacReader::getNames() const

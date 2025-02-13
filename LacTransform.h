@@ -14,7 +14,7 @@ struct LacLutEntry
 struct LacLut
 {
     std::string name;
-    size_t eV;
+    size_t vp;
     std::vector<LacLutEntry> lut;
 };
 

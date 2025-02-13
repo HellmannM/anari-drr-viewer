@@ -2,8 +2,8 @@
     "lac_luts":
     [
     {
-        "name": "13000eV",
-        "eV": 13000,
+        "name": "50kVp (13keV)",
+        "Vp": 50000,
         "lut":
         [
             {"density": 0,    "lac": 0.0},
@@ -28,8 +28,8 @@
         ]
     },
     {
-        "name": "13500eV",
-        "eV": 13500,
+        "name": "50kVp (13.5keV)",
+        "Vp": 50000,
         "lut":
         [
             {"density": 0,    "lac": 0.0},
@@ -54,8 +54,8 @@
         ]
     },
     {
-        "name": "14000eV",
-        "eV": 14000,
+        "name": "50kVp (14keV)",
+        "Vp": 50000,
         "lut":
         [
             {"density": 0,    "lac": 0.0},
@@ -80,8 +80,8 @@
         ]
     },
     {
-        "name": "120000eV",
-        "eV": 120000,
+        "name": "120kVp",
+        "Vp": 120000,
         "lut":
         [
             {"density": -1024, "lac": 0.00},
@@ -100,8 +100,8 @@
         ]
     },
     {
-        "name": "120000eV-shifted",
-        "eV": 120000,
+        "name": "120kVp-shifted",
+        "Vp": 120000,
         "lut":
         [
             {"density": 0,    "lac": 0.0},
