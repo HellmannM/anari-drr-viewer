@@ -485,22 +485,29 @@ class Application : public anari_viewer::Application
           std::cerr << "Could not load " << it->filename << "\n";
           continue;
         }
-        std::cout << "Loaded " << it->filename << ": ("
-            << visionarayImage.width() << "x" << visionarayImage.height()
-            << ", " << visionarayImage.format() << ")\n";
+        std::string pf{"PF_UNKNOWN"};
         size_t bpp{4};
         switch (visionarayImage.format())
         {
+          case visionaray::pixel_format::PF_R8:
+            bpp = 1;
+            pf = "PF_R8";
+            break;
           case visionaray::pixel_format::PF_RGB8:
             bpp = 3;
+            pf = "PF_RGB8";
             break;
           case visionaray::pixel_format::PF_RGBA8:
             bpp = 4;
+            pf = "PF_RGBA8";
             break;
           default:
             std::cerr << "ERROR: " << it->filename << " has unsupported pixel format.\n";
             continue;
         }
+        std::cout << "Loaded " << it->filename << ": ("
+            << visionarayImage.width() << "x" << visionarayImage.height()
+            << ", " << pf << ")\n";
         m_state.images.emplace_back(visionarayImage.width(),
                                     visionarayImage.height(),
                                     bpp,
@@ -570,14 +577,20 @@ class Application : public anari_viewer::Application
     peditor->setLoadReferenceImageCallback([=, this](size_t index){
         auto& im = m_state.images[index];
         feature_matcher::PIXEL_TYPE pixelType;
-        if (im.bpp == 3)
-          pixelType = feature_matcher::PIXEL_TYPE::RGB;
-        else if (im.bpp == 4)
-          pixelType = feature_matcher::PIXEL_TYPE::RGBA;
-        else
+        switch (im.bpp)
         {
-          std::cerr << "Error: pixel type unsupported\n";
-          return;
+          case 1:
+            pixelType = feature_matcher::PIXEL_TYPE::R8;
+            break;
+          case 3:
+            pixelType = feature_matcher::PIXEL_TYPE::RGB8;
+            break;
+          case 4:
+            pixelType = feature_matcher::PIXEL_TYPE::RGBA8;
+            break;
+          default:
+            std::cerr << "Error: pixel type unsupported\n";
+            return;
         }
         m_state.matchers.getActiveMatcher()->set_image(im.data.data(),
                                                        im.width,
@@ -594,7 +607,7 @@ class Application : public anari_viewer::Application
         m_state.matchers.getActiveMatcher()->set_image(fb.data(),
                                                        width,
                                                        height,
-                                                       feature_matcher::PIXEL_TYPE::RGBA,
+                                                       feature_matcher::PIXEL_TYPE::RGBA8,
                                                        feature_matcher::IMAGE_TYPE::REFERENCE,
                                                        false /*swizzle*/);
         });
@@ -612,7 +625,7 @@ class Application : public anari_viewer::Application
         m_state.matchers.getActiveMatcher()->set_image(fb.data(),
                                                        width,
                                                        height,
-                                                       feature_matcher::PIXEL_TYPE::RGBA,
+                                                       feature_matcher::PIXEL_TYPE::RGBA8,
                                                        feature_matcher::IMAGE_TYPE::QUERY,
                                                        false /*swizzle*/);
         // match

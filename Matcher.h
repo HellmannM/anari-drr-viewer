@@ -10,9 +10,10 @@ struct feature_matcher
 {
   enum PIXEL_TYPE
   {
-    RGBA = 0,
-    RGB = 1,
-    FLOAT3 = 2
+    RGBA8 = 0,
+    RGB8 = 1,
+    R8 = 2,
+    FLOAT3 = 3
   };
 
   enum IMAGE_TYPE {

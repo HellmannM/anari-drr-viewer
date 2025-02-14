@@ -53,8 +53,18 @@ void ImageViewport::showImage(size_t index)
 
   const uint8_t* imageData{nullptr};
   std::vector<uint8_t> swizzledImageData;
-  if (m_images[index].bpp == 3) {
-    // convert to rgba first
+  // convert to rgba first
+  if (m_images[index].bpp == 1) {
+    swizzledImageData.resize(m_images[index].width * m_images[index].height * 4);
+    for (int i = 0; i < m_images[index].width * m_images[index].height; ++i) {
+      swizzledImageData[i * 4 + 0] = m_images[index].data.data()[i];
+      swizzledImageData[i * 4 + 1] = m_images[index].data.data()[i];
+      swizzledImageData[i * 4 + 2] = m_images[index].data.data()[i];
+      swizzledImageData[i * 4 + 3] = 255;
+    }
+    imageData = swizzledImageData.data();
+  }
+  else if (m_images[index].bpp == 3) {
     swizzledImageData.resize(m_images[index].width * m_images[index].height * 4);
     for (int i = 0; i < m_images[index].width * m_images[index].height; ++i) {
         swizzledImageData[i * 4 + 0] = m_images[index].data.data()[i * 3 + 0];
@@ -105,6 +115,10 @@ void ImageViewport::showImage(size_t index)
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_framebufferTexture, 0);
+
+  // clear to black background
+  glClearColor(0.f, 0.f, 0.f, 1.f);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   // calc scaling and offset
   int imgWidth = m_images[index].width;
