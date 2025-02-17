@@ -28,6 +28,7 @@ using LoadFramebufferAsReferenceImageCallback = std::function<void(void)>;
 using MatchCallback = std::function<void(void)>;
 using ExportScreenshotCallback = std::function<void(void)>;
 using SaveCameraCallback = std::function<void(size_t)>;
+using ExportPredictionsCallback = std::function<void(void)>;
 
 class PredictionsEditor : public anari_viewer::windows::Window
 {
@@ -49,6 +50,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   void setMatchCallback(MatchCallback cb);
   void setExportScreenshotCallback(ExportScreenshotCallback cb);
   void setSaveCameraCallback(SaveCameraCallback cb);
+  void setExportPredictionsCallback(ExportPredictionsCallback cb);
   void triggerUpdateCameraCallback(
       const anari::math::float3& eye,
       const anari::math::float3& center,
@@ -61,6 +63,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   void triggerMatchCallback();
   void triggerExportScreenshotCallback();
   void triggerSaveCameraCallback(size_t index);
+  void triggerExportPredictionsCallback();
 
  private:
   // callback called whenever new camera selected
@@ -76,6 +79,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   MatchCallback m_matchCallback;
   ExportScreenshotCallback m_exportScreenshotCallback;
   SaveCameraCallback m_saveCameraCallback;
+  ExportPredictionsCallback m_exportPredictionsCallback;
 
   const prediction_container* m_predictions;
   size_t m_matcherIndex;

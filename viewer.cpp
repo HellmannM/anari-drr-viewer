@@ -665,6 +665,23 @@ class Application : public anari_viewer::Application
         m_state.predictions[index].refined_camera.up = up;
         m_state.predictions[index].refined_camera.initialized = true;
         });
+    peditor->setExportPredictionsCallback([=, this](){
+        int inc = 0;
+        std::string inc_str = "";
+        std::string screenshot_file_base{"predictions"};
+        std::string filename = screenshot_file_base + inc_str + ".json";
+        while (std::filesystem::exists(filename))
+        {
+          ++inc;
+          inc_str = std::to_string(inc);
+          while (inc_str.length() < 4)
+            inc_str = std::string("0") + inc_str;
+          inc_str = std::string("-") + inc_str;
+          filename = screenshot_file_base + inc_str + ".json";
+        }
+        if (m_state.predictions.export_json(filename))
+          std::cout << "Predictions exported to: " << filename << "\n";
+        });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);

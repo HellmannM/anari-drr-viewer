@@ -31,11 +31,14 @@ void PredictionsEditor::buildUI()
   if (ImGui::Button("export screenshot"))
     triggerExportScreenshotCallback();
 
-  ImGui::Separator();
-
   auto numPredictions = m_predictions->predictions.size();
   if (numPredictions > 0)
   {
+    if (ImGui::Button("export predictions"))
+      triggerExportPredictionsCallback();
+
+    ImGui::Separator();
+
     ImGui::Text("Select image:");
     if (ImGui::BeginTable("Images", numPredictions))
     {
@@ -70,7 +73,7 @@ void PredictionsEditor::buildUI()
 
       if (m_predictions->predictions[m_selectedImage].refined_camera.initialized)
       {
-        if (ImGui::Button("Load saved camera"))
+        if (ImGui::Button("Load refined camera"))
         {
           triggerUpdateCameraCallback(
               m_predictions->predictions[m_selectedImage].refined_camera.eye,
@@ -153,6 +156,11 @@ void PredictionsEditor::setSaveCameraCallback(SaveCameraCallback cb)
   m_saveCameraCallback = cb;
 }
 
+void PredictionsEditor::setExportPredictionsCallback(ExportPredictionsCallback cb)
+{
+  m_exportPredictionsCallback = cb;
+}
+
 void PredictionsEditor::triggerResetCameraCallback()
 {
   if (m_resetCameraCallback)
@@ -208,6 +216,12 @@ void PredictionsEditor::triggerSaveCameraCallback(size_t index)
 {
   if (m_saveCameraCallback)
     m_saveCameraCallback(index);
+}
+
+void PredictionsEditor::triggerExportPredictionsCallback()
+{
+  if (m_exportPredictionsCallback)
+    m_exportPredictionsCallback();
 }
 
 } // namespace anari_viewer::windows

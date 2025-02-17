@@ -94,12 +94,28 @@ struct prediction_container
 
             for (auto& p : data["predictions"])
             {
-                predictions.push_back(prediction(
+                predictions.emplace_back(
                     p["file"],
-                    p["eye"]["x"], p["eye"]["y"], p["eye"]["z"],
-                    p["center"]["x"], p["center"]["y"], p["center"]["z"],
-                    p["up"]["x"], p["up"]["y"], p["up"]["z"]
-                ));
+                    p["camera"]["eye"]["x"],    p["camera"]["eye"]["y"],    p["camera"]["eye"]["z"],
+                    p["camera"]["center"]["x"], p["camera"]["center"]["y"], p["camera"]["center"]["z"],
+                    p["camera"]["up"]["x"],     p["camera"]["up"]["y"],     p["camera"]["up"]["z"]
+                );
+                if (p.contains("refined_camera"))
+                {
+                    predictions.back().refined_camera.eye = anari::math::float3{
+                            p["refined_camera"]["eye"]["x"],
+                            p["refined_camera"]["eye"]["y"],
+                            p["refined_camera"]["eye"]["z"]};
+                    predictions.back().refined_camera.center = anari::math::float3{
+                            p["refined_camera"]["center"]["x"],
+                            p["refined_camera"]["center"]["y"],
+                            p["refined_camera"]["center"]["z"]};
+                    predictions.back().refined_camera.up = anari::math::float3{
+                            p["refined_camera"]["up"]["x"],
+                            p["refined_camera"]["up"]["y"],
+                            p["refined_camera"]["up"]["z"]};
+                    predictions.back().refined_camera.initialized = true;
+                }
                 std::cout << predictions.back() << "\n";
             }
         } catch (...)
@@ -119,5 +135,52 @@ struct prediction_container
             fovy_ = fovy;
         }
         return retval;
+    }
+
+    bool export_json(std::string export_path)
+    {
+        std::ofstream json_file(export_path);
+        if (json_file.fail())
+        {
+            std::cerr << "ERROR: can't write to file: " << export_path << "\n" << std::strerror(errno) << std::endl;
+            return false;
+        }
+
+        //nlohmann::json predictions_array = nlohmann::json::array();
+        nlohmann::json j;
+        for (auto& p : predictions)
+        {
+            nlohmann::json entry;
+            entry["file"]        = p.filename;
+            if (p.initial_camera.initialized)
+            {
+                entry["camera"]["eye"]["x"]    = p.initial_camera.eye.x;
+                entry["camera"]["eye"]["y"]    = p.initial_camera.eye.y;
+                entry["camera"]["eye"]["z"]    = p.initial_camera.eye.z;
+                entry["camera"]["center"]["x"] = p.initial_camera.center.x;
+                entry["camera"]["center"]["y"] = p.initial_camera.center.y;
+                entry["camera"]["center"]["z"] = p.initial_camera.center.z;
+                entry["camera"]["up"]["x"]     = p.initial_camera.up.x;
+                entry["camera"]["up"]["y"]     = p.initial_camera.up.y;
+                entry["camera"]["up"]["z"]     = p.initial_camera.up.z;
+            }
+            if (p.refined_camera.initialized)
+            {
+                entry["refined_camera"]["eye"]["x"]    = p.refined_camera.eye.x;
+                entry["refined_camera"]["eye"]["y"]    = p.refined_camera.eye.y;
+                entry["refined_camera"]["eye"]["z"]    = p.refined_camera.eye.z;
+                entry["refined_camera"]["center"]["x"] = p.refined_camera.center.x;
+                entry["refined_camera"]["center"]["y"] = p.refined_camera.center.y;
+                entry["refined_camera"]["center"]["z"] = p.refined_camera.center.z;
+                entry["refined_camera"]["up"]["x"]     = p.refined_camera.up.x;
+                entry["refined_camera"]["up"]["y"]     = p.refined_camera.up.y;
+                entry["refined_camera"]["up"]["z"]     = p.refined_camera.up.z;
+            }
+            j["predictions"].push_back(entry);
+        }
+        j["sensor"]["fov_x_rad"] = fovx;
+        j["sensor"]["fov_y_rad"] = fovy;
+        json_file << j.dump(4);
+        return true;
     }
 };
