@@ -50,6 +50,7 @@ void PredictionsEditor::buildUI()
         if (ImGui::Selectable(itemid.c_str(), i == m_selectedImage))
         {
           m_selectedImage = i;
+          m_filename = m_predictions->predictions[m_selectedImage].filename;
           triggerShowImageCallback(m_selectedImage);
           triggerLoadReferenceImageCallback(m_selectedImage);
         }
@@ -57,6 +58,8 @@ void PredictionsEditor::buildUI()
       ImGui::PopStyleVar();
       ImGui::EndTable();
     }
+    if (!m_filename.empty())
+      ImGui::Text("%s", m_filename.c_str());
 
     if (m_selectedImage < numPredictions)
     {
@@ -103,6 +106,7 @@ void PredictionsEditor::buildUI()
   ImGui::Separator();
 
   if (ImGui::Button("Set fb as ref")) {
+    m_filename.clear();
     triggerLoadFramebufferAsReferenceImageCallback();
   }
 

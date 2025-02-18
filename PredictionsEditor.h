@@ -86,6 +86,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   std::vector<std::string> m_matcherNamesStr;
   std::vector<const char*> m_matcherNames;
   size_t m_selectedImage{static_cast<size_t>(-1)};
+  std::string m_filename;
 };
 
 } // namespace anari_viewer::windows
