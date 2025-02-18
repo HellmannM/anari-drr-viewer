@@ -682,6 +682,9 @@ class Application : public anari_viewer::Application
         if (m_state.predictions.export_json(filename))
           std::cout << "Predictions exported to: " << filename << "\n";
         });
+    peditor->setSetMatchThresholdCallback([this](float threshold){
+        m_state.matchers.getActiveMatcher()->set_good_match_threshold(threshold);
+        });
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);

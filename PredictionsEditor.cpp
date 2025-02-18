@@ -113,6 +113,10 @@ void PredictionsEditor::buildUI()
   if (ImGui::Button("Match")) {
     triggerMatchCallback();
   }
+
+  if (ImGui::SliderFloat("Match Threshold", &m_matchThreshold, 0.f, 100.f)) {
+    triggerSetMatchThresholdCallback(m_matchThreshold);
+  }
 }
 
 void PredictionsEditor::setUpdateCameraCallback(UpdateCameraCallback cb)
@@ -163,6 +167,11 @@ void PredictionsEditor::setSaveCameraCallback(SaveCameraCallback cb)
 void PredictionsEditor::setExportPredictionsCallback(ExportPredictionsCallback cb)
 {
   m_exportPredictionsCallback = cb;
+}
+
+void PredictionsEditor::setSetMatchThresholdCallback(SetMatchThresholdCallback cb)
+{
+  m_setMatchThresholdCallback = cb;
 }
 
 void PredictionsEditor::triggerResetCameraCallback()
@@ -226,6 +235,12 @@ void PredictionsEditor::triggerExportPredictionsCallback()
 {
   if (m_exportPredictionsCallback)
     m_exportPredictionsCallback();
+}
+
+void PredictionsEditor::triggerSetMatchThresholdCallback(float threshold)
+{
+  if (m_setMatchThresholdCallback)
+    m_setMatchThresholdCallback(threshold);
 }
 
 } // namespace anari_viewer::windows

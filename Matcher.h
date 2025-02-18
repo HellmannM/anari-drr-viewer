@@ -34,6 +34,7 @@ struct feature_matcher
   virtual bool update_camera(std::array<float, 3>& eye,
                              std::array<float, 3>& center,
                              std::array<float, 3>& up);
+  virtual void set_good_match_threshold(float threshold);
 };
 
 struct MatchersWrapper

@@ -29,6 +29,7 @@ using MatchCallback = std::function<void(void)>;
 using ExportScreenshotCallback = std::function<void(void)>;
 using SaveCameraCallback = std::function<void(size_t)>;
 using ExportPredictionsCallback = std::function<void(void)>;
+using SetMatchThresholdCallback = std::function<void(float)>;
 
 class PredictionsEditor : public anari_viewer::windows::Window
 {
@@ -51,6 +52,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   void setExportScreenshotCallback(ExportScreenshotCallback cb);
   void setSaveCameraCallback(SaveCameraCallback cb);
   void setExportPredictionsCallback(ExportPredictionsCallback cb);
+  void setSetMatchThresholdCallback(SetMatchThresholdCallback cb);
   void triggerUpdateCameraCallback(
       const anari::math::float3& eye,
       const anari::math::float3& center,
@@ -64,6 +66,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   void triggerExportScreenshotCallback();
   void triggerSaveCameraCallback(size_t index);
   void triggerExportPredictionsCallback();
+  void triggerSetMatchThresholdCallback(float threshold);
 
  private:
   // callback called whenever new camera selected
@@ -80,6 +83,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   ExportScreenshotCallback m_exportScreenshotCallback;
   SaveCameraCallback m_saveCameraCallback;
   ExportPredictionsCallback m_exportPredictionsCallback;
+  SetMatchThresholdCallback m_setMatchThresholdCallback;
 
   const prediction_container* m_predictions;
   size_t m_matcherIndex;
@@ -87,6 +91,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   std::vector<const char*> m_matcherNames;
   size_t m_selectedImage{static_cast<size_t>(-1)};
   std::string m_filename;
+  float m_matchThreshold{50.f};
 };
 
 } // namespace anari_viewer::windows
