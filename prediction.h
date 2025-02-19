@@ -82,7 +82,7 @@ struct prediction_container
             return false;
         }
         predictions.clear();
-        std::cout << "Loading predictions:\n";
+        //std::cout << "Loading predictions:\n";
         try
         {
             nlohmann::json data = nlohmann::json::parse(json_file);
@@ -116,7 +116,7 @@ struct prediction_container
                             p["refined_camera"]["up"]["z"]};
                     predictions.back().refined_camera.initialized = true;
                 }
-                std::cout << predictions.back() << "\n";
+                //std::cout << predictions.back() << "\n";
             }
         } catch (...)
         {
