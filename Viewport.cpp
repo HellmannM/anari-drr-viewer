@@ -117,7 +117,10 @@ void DRRViewport::buildUI()
   ui_contextMenu();
 
   if (!m_contextMenuVisible)
+  {
+    ui_picking();
     ui_handleInput();
+  }
 }
 
 void DRRViewport::setWorld(anari::World world, bool resetCameraView)
@@ -714,6 +717,61 @@ void DRRViewport::ui_overlay()
   }
 
   ImGui::End();
+}
+
+void DRRViewport::ui_picking()
+{
+  const ImGuiIO &io = ImGui::GetIO();
+  const bool shouldPick = ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+                          && io.KeysDown[GLFW_KEY_LEFT_SHIFT]
+                          && ImGui::IsWindowHovered();
+  if (shouldPick)
+  {
+    auto mPos = ImGui::GetMousePos();
+    auto wMin = ImGui::GetItemRectMin();
+    auto pixel = anari::math::int2(m_viewportSize.x - (mPos[0] - wMin[0]), mPos[1] - wMin[1]);
+    pixel.x = std::clamp(pixel.x, 0, m_viewportSize.x);
+    pixel.y = std::clamp(pixel.y, 0, m_viewportSize.y);
+    printf("Pixel picked: (%i, %i)\n", pixel.x, pixel.y);
+    pick(pixel);
+  }
+}
+
+void DRRViewport::pick(anari::math::int2 pixel)
+{
+  // estimated origin:
+  auto ob = anari::map<anari::math::float3>(m_device, m_frame, "channel.origin");
+  if (ob.data) {
+    auto origin = ob.data[m_viewportSize.x * pixel.y + pixel.x];
+    printf("origin: (%f, %f, %f)\n", origin.x, origin.y, origin.z);
+  }
+  anari::unmap(m_device, m_frame, "channel.origin");
+
+  // make ray
+  m_camera.begin_frame();
+  m_pickedRays.push_back(
+      m_camera.primary_ray(visionaray::basic_ray<float>{},
+                           (float)pixel.x, (float)pixel.y,
+                           (float)m_viewportSize.x, (float)m_viewportSize.y)
+      );
+  m_camera.end_frame();
+
+  // get closest point between both rays
+  if (m_pickedRays.size() >= 2)
+  {
+    auto& r1 = m_pickedRays[0];
+    auto& r2 = m_pickedRays[1];
+    auto n  = cross(r1.dir, r2.dir);
+    auto n1 = cross(r1.dir, n);
+    auto n2 = cross(r2.dir, n);
+    auto p1 = (dot(r1.ori, n1) - dot(r2.ori, n1)) / dot(r2.dir, n1) * r2.dir + r2.ori;
+    auto p2 = (dot(r2.ori, n2) - dot(r1.ori, n2)) / dot(r1.dir, n2) * r1.dir + r1.ori;
+    auto midpoint = (p1 + p2) / 2.f;
+    auto distance = norm(p2 - p1);
+    printf("calculated coordinate: (%f, %f, %f)\n", midpoint.x, midpoint.y, midpoint.z);
+    printf("distance between rays: %f\n", distance);
+    m_pickedRays.clear();
+  }
 }
 
 } // namespace anari_viewer::windows

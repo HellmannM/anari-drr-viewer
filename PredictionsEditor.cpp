@@ -117,6 +117,9 @@ void PredictionsEditor::buildUI()
   if (ImGui::SliderFloat("Match Threshold", &m_matchThreshold, 0.f, 100.f)) {
     triggerSetMatchThresholdCallback(m_matchThreshold);
   }
+
+  ImGui::Separator();
+  ImGui::Text("Select pixel: Shift + LMB");
 }
 
 void PredictionsEditor::setUpdateCameraCallback(UpdateCameraCallback cb)

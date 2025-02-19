@@ -17,6 +17,7 @@
 #include <common/input/mouse_event.h>
 #include <common/manip/camera_manipulator.h>
 #include <visionaray/pinhole_camera.h>
+#include <visionaray/math/ray.h>
 // std
 #include <array>
 #include <limits>
@@ -44,6 +45,7 @@ struct DRRViewport : public anari_viewer::windows::Window
   void setScatterFraction(float scatterFraction);
   void setScatterSigma(float scatterSigma);
   bool getFrame(std::vector<uint8_t>& color, std::vector<float>& depth3d, size_t& width, size_t& height);
+  void pick(anari::math::int2 pixel);
 
   anari::Device device() const;
 
@@ -59,6 +61,7 @@ struct DRRViewport : public anari_viewer::windows::Window
   void ui_handleInput();
   void ui_contextMenu();
   void ui_overlay();
+  void ui_picking();
 
   void handleMouseDownEvent(visionaray::mouse_event const& event);
   void handleMouseUpEvent(visionaray::mouse_event const& event);
@@ -87,6 +90,9 @@ struct DRRViewport : public anari_viewer::windows::Window
 
   float m_fov{40.f};
   float m_defaultFov{40.f};
+  
+  // pixel picker
+  std::vector<visionaray::basic_ray<float>> m_pickedRays;
 
   // ANARI objects //
 
