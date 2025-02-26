@@ -12,14 +12,14 @@ namespace anari_viewer::windows {
 
 PredictionsEditor::PredictionsEditor(
     const prediction_container& predictions,
-    std::vector<std::string> matcherNames,
+    std::vector<std::string> estimatorNames,
     const char *name)
-    : Window(name, true), m_predictions(&predictions), m_matcherIndex(0), m_matcherNamesStr(matcherNames)
+    : Window(name, true), m_predictions(&predictions), m_estimatorIndex(0), m_estimatorNamesStr(estimatorNames)
 {
-  m_matcherNames = std::vector<const char*>(m_matcherNamesStr.size(), nullptr);
-  std::transform(m_matcherNamesStr.begin(),
-      m_matcherNamesStr.end(),
-      m_matcherNames.begin(),
+  m_estimatorNames = std::vector<const char*>(m_estimatorNamesStr.size(), nullptr);
+  std::transform(m_estimatorNamesStr.begin(),
+      m_estimatorNamesStr.end(),
+      m_estimatorNames.begin(),
       [](const std::string &s) { return s.c_str(); });
 }
 
@@ -89,16 +89,16 @@ void PredictionsEditor::buildUI()
     ImGui::Separator();
   }
 
-  // Combo box for matcher type
-  if (!m_matcherNames.empty())
+  // Combo box for estimator type
+  if (!m_estimatorNames.empty())
   {
-    int matcherIndex = static_cast<int>(m_matcherIndex);
-    if (ImGui::Combo("Matcher Type", &matcherIndex, m_matcherNames.data(), m_matcherNames.size()))
+    int estimatorIndex = static_cast<int>(m_estimatorIndex);
+    if (ImGui::Combo("Estimator Type", &estimatorIndex, m_estimatorNames.data(), m_estimatorNames.size()))
     {
-      if (matcherIndex != m_matcherIndex)
+      if (estimatorIndex != m_estimatorIndex)
       {
-        m_matcherIndex = matcherIndex;
-        triggerSetActiveMatcherIndexCallback(static_cast<size_t>(matcherIndex));
+        m_estimatorIndex = estimatorIndex;
+        triggerSetActiveEstimatorIndexCallback(static_cast<size_t>(estimatorIndex));
       }
     }
   }
@@ -137,9 +137,9 @@ void PredictionsEditor::setShowImageCallback(ShowImageCallback cb)
   m_showImageCallback = cb;
 }
 
-void PredictionsEditor::setSetActiveMatcherIndexCallback(SetActiveMatcherIndexCallback cb)
+void PredictionsEditor::setSetActiveEstimatorIndexCallback(SetActiveEstimatorIndexCallback cb)
 {
-  m_setActiveMatcherIndexCallback = cb;
+  m_setActiveEstimatorIndexCallback = cb;
 }
 
 void PredictionsEditor::setLoadReferenceImageCallback(LoadReferenceImageCallback cb)
@@ -198,10 +198,10 @@ void PredictionsEditor::triggerShowImageCallback(size_t index)
     m_showImageCallback(index);
 }
 
-void PredictionsEditor::triggerSetActiveMatcherIndexCallback(size_t index)
+void PredictionsEditor::triggerSetActiveEstimatorIndexCallback(size_t index)
 {
-  if (m_setActiveMatcherIndexCallback)
-    m_setActiveMatcherIndexCallback(index);
+  if (m_setActiveEstimatorIndexCallback)
+    m_setActiveEstimatorIndexCallback(index);
 }
 
 void PredictionsEditor::triggerLoadReferenceImageCallback(size_t index)

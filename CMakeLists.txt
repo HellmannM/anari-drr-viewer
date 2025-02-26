@@ -15,7 +15,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 add_executable(${SUBPROJECT_NAME}
     ImageViewport.cpp
     LacTransform.cpp
-    Matcher.cpp
+    ImageTransformEstimatorWrapper.cpp
     PredictionsEditor.cpp
     SettingsEditor.cpp
     Viewport.cpp
@@ -38,6 +38,13 @@ endif()
 
 # nlohmann JSON (JSON loader)
 include_directories(${NLOHMANN_JSON_INCLUDE_DIR})
+
+# image transform estimator
+set(IMAGE_TRANSFORM_ESTIMATOR_INCLUDE_DIR "" CACHE PATH "Path to Image Transform Estimator include files.")
+if(NOT IMAGE_TRANSFORM_ESTIMATOR_INCLUDE_DIR)
+    message(FATAL_ERROR "IMAGE_TRANSFORM_ESTIMATOR_INCLUDE_DIR is not set.")
+endif()
+include_directories(${IMAGE_TRANSFORM_ESTIMATOR_INCLUDE_DIR})
 
 # copy LacLuts.json file to bin dir
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/LacLuts.json" "${CMAKE_BINARY_DIR}/LacLuts.json" COPYONLY)

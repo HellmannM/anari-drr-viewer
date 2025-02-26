@@ -21,9 +21,9 @@
 // ours
 #include "FieldTypes.h"
 #include "Image.h"
+#include "ImageTransformEstimatorWrapper.h"
 #include "ImageViewport.h"
 #include "LacTransform.h"
-#include "Matcher.h"
 #include "prediction.h"
 #include "PredictionsEditor.h"
 #include "readRAW.h"
@@ -48,7 +48,7 @@ static float g_voxelRange[2];
 static std::string g_jsonfile;
 static std::string g_laclutfile;
 static size_t g_laclutid{0};
-static std::vector<std::string> g_matcherLibraryNames{};
+static std::vector<std::string> g_estimatorLibraryNames{};
 
 static const char *g_defaultLayout =
     R"layout(
@@ -111,7 +111,7 @@ struct AppState
   RAWReader rawReader;
   prediction_container predictions;
   std::vector<Image> images;
-  MatchersWrapper matchers;
+  ImageTransformEstimatorWrapper estimators;
 };
 
 static void statusFunc(const void *userData,
@@ -440,8 +440,8 @@ class Application : public anari_viewer::Application
     m_state.device = device;
     m_state.world = anari::newObject<anari::World>(device);
 
-    // Matchers //
-    m_state.matchers.init(g_matcherLibraryNames);
+    // estimators //
+    m_state.estimators.init(g_estimatorLibraryNames);
 
     // Setup scene //
     if (!g_laclutfile.empty())
@@ -563,7 +563,7 @@ class Application : public anari_viewer::Application
             }
         });
 
-    auto *peditor = new anari_viewer::windows::PredictionsEditor(m_state.predictions, m_state.matchers.m_matcherNames);
+    auto *peditor = new anari_viewer::windows::PredictionsEditor(m_state.predictions, m_state.estimators.m_estimatorNames);
     peditor->setUpdateCameraCallback(
         [=](const anari::math::float3 &eye, 
             const anari::math::float3 &center,
@@ -573,30 +573,30 @@ class Application : public anari_viewer::Application
         });
     peditor->setResetCameraCallback([=](){ viewport->resetView(); });
     peditor->setShowImageCallback([=](size_t index){ imageViewport->showImage(index); });
-    peditor->setSetActiveMatcherIndexCallback([this](size_t index){ m_state.matchers.setActiveMatcherIndex(index); });
+    peditor->setSetActiveEstimatorIndexCallback([this](size_t index){ m_state.estimators.setActiveEstimatorIndex(index); });
     peditor->setLoadReferenceImageCallback([=, this](size_t index){
         auto& im = m_state.images[index];
-        feature_matcher::PIXEL_TYPE pixelType;
+        image_transform_estimator::PIXEL_TYPE pixelType;
         switch (im.bpp)
         {
           case 1:
-            pixelType = feature_matcher::PIXEL_TYPE::R8;
+            pixelType = image_transform_estimator::PIXEL_TYPE::R8;
             break;
           case 3:
-            pixelType = feature_matcher::PIXEL_TYPE::RGB8;
+            pixelType = image_transform_estimator::PIXEL_TYPE::RGB8;
             break;
           case 4:
-            pixelType = feature_matcher::PIXEL_TYPE::RGBA8;
+            pixelType = image_transform_estimator::PIXEL_TYPE::RGBA8;
             break;
           default:
             std::cerr << "Error: pixel type unsupported\n";
             return;
         }
-        m_state.matchers.getActiveMatcher()->set_image(im.data.data(),
+        m_state.estimators.getActiveEstimator()->set_image(im.data.data(),
                                                        im.width,
                                                        im.height,
                                                        pixelType,
-                                                       feature_matcher::IMAGE_TYPE::REFERENCE,
+                                                       image_transform_estimator::IMAGE_TYPE::REFERENCE,
                                                        true /*swizzle*/);
         });
     peditor->setLoadFramebufferAsReferenceImageCallback([=, this](){
@@ -604,11 +604,11 @@ class Application : public anari_viewer::Application
         std::vector<float> depth3d;
         size_t width, height;
         viewport->getFrame(fb, depth3d, width, height);
-        m_state.matchers.getActiveMatcher()->set_image(fb.data(),
+        m_state.estimators.getActiveEstimator()->set_image(fb.data(),
                                                        width,
                                                        height,
-                                                       feature_matcher::PIXEL_TYPE::RGBA8,
-                                                       feature_matcher::IMAGE_TYPE::REFERENCE,
+                                                       image_transform_estimator::PIXEL_TYPE::RGBA8,
+                                                       image_transform_estimator::IMAGE_TYPE::REFERENCE,
                                                        false /*swizzle*/);
         });
     peditor->setMatchCallback([=, this](){
@@ -616,29 +616,29 @@ class Application : public anari_viewer::Application
         std::vector<float> depth3d;
         size_t width, height;
         viewport->getFrame(fb, depth3d, width, height);
-        m_state.matchers.getActiveMatcher()->set_image(depth3d.data(),
+        m_state.estimators.getActiveEstimator()->set_image(depth3d.data(),
                                                        width,
                                                        height,
-                                                       feature_matcher::PIXEL_TYPE::FLOAT3,
-                                                       feature_matcher::IMAGE_TYPE::DEPTH3D,
+                                                       image_transform_estimator::PIXEL_TYPE::FLOAT3,
+                                                       image_transform_estimator::IMAGE_TYPE::DEPTH3D,
                                                        false /*swizzle*/);
-        m_state.matchers.getActiveMatcher()->set_image(fb.data(),
+        m_state.estimators.getActiveEstimator()->set_image(fb.data(),
                                                        width,
                                                        height,
-                                                       feature_matcher::PIXEL_TYPE::RGBA8,
-                                                       feature_matcher::IMAGE_TYPE::QUERY,
+                                                       image_transform_estimator::PIXEL_TYPE::RGBA8,
+                                                       image_transform_estimator::IMAGE_TYPE::QUERY,
                                                        false /*swizzle*/);
         // match
         anari::math::float3 eye, center, up;
         float fovy, aspect;
         viewport->getView(eye, center, up, fovy, aspect);
-        m_state.matchers.getActiveMatcher()->calibrate(width, height, fovy, aspect);
-        m_state.matchers.getActiveMatcher()->match();
+        m_state.estimators.getActiveEstimator()->calibrate(width, height, fovy, aspect);
+        m_state.estimators.getActiveEstimator()->match();
         // update view
         std::array<float, 3> eyeArr{eye.x, eye.y, eye.z};
         std::array<float, 3> centerArr{center.x, center.y, center.z};
         std::array<float, 3> upArr{up.x, up.y, up.z};
-        m_state.matchers.getActiveMatcher()->update_camera(eyeArr, centerArr, upArr);
+        m_state.estimators.getActiveEstimator()->update_camera(eyeArr, centerArr, upArr);
         eye = anari::math::float3{eyeArr[0], eyeArr[1], eyeArr[2]};
         center = anari::math::float3{centerArr[0], centerArr[1], centerArr[2]};
         up = anari::math::float3{upArr[0], upArr[1], upArr[2]};
@@ -683,7 +683,7 @@ class Application : public anari_viewer::Application
           std::cout << "Predictions exported to: " << filename << "\n";
         });
     peditor->setSetMatchThresholdCallback([this](float threshold){
-        m_state.matchers.getActiveMatcher()->set_good_match_threshold(threshold);
+        m_state.estimators.getActiveEstimator()->set_good_match_threshold(threshold);
         });
 
     anari_viewer::WindowArray windows;
@@ -736,7 +736,7 @@ static void printUsage()
             << "   [{--json|-j} <directory>]\n"
             << "   [{--lacfile|--lac} <directory>]\n"
             << "   [{--lut} <index>]\n"
-            << "   [{--matcher|-m} <directory>]\n"
+            << "   [{--matcher|-m|--estimator|-e} <directory>]\n"
             << "   [{--dims|-d} <dimx dimy dimz>]\n"
             << "   [{--type|-t} [{uint8|uint16|float32}]\n"
             << "   <volume file>\n";
@@ -781,8 +781,8 @@ static void parseCommandLine(int argc, char *argv[])
       g_laclutfile = argv[++i];
     } else if (arg == "--lut") {
       g_laclutid = std::atoi(argv[++i]);
-    } else if (arg == "-m" || arg == "--matcher") {
-      g_matcherLibraryNames.emplace_back(argv[++i]);
+    } else if (arg == "-m" || arg == "--matcher" || arg == "-e" || arg == "--estimator") {
+      g_estimatorLibraryNames.emplace_back(argv[++i]);
     } else
       g_filename = std::move(arg);
   }

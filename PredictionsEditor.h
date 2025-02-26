@@ -22,7 +22,7 @@ using UpdateCameraCallback =
                        const anari::math::float3&)>;
 using ResetCameraCallback = std::function<void(void)>;
 using ShowImageCallback = std::function<void(size_t)>;
-using SetActiveMatcherIndexCallback = std::function<void(size_t)>;
+using SetActiveEstimatorIndexCallback = std::function<void(size_t)>;
 using LoadReferenceImageCallback = std::function<void(size_t)>;
 using LoadFramebufferAsReferenceImageCallback = std::function<void(void)>;
 using MatchCallback = std::function<void(void)>;
@@ -36,7 +36,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
  public:
   PredictionsEditor(
         const prediction_container& predictions,
-        std::vector<std::string> matcherNames,
+        std::vector<std::string> estimatorNames,
         const char *name = "Predictions Editor");
   ~PredictionsEditor() = default;
 
@@ -45,7 +45,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
   void setUpdateCameraCallback(UpdateCameraCallback cb);
   void setResetCameraCallback(ResetCameraCallback cb);
   void setShowImageCallback(ShowImageCallback cb);
-  void setSetActiveMatcherIndexCallback(SetActiveMatcherIndexCallback cb);
+  void setSetActiveEstimatorIndexCallback(SetActiveEstimatorIndexCallback cb);
   void setLoadReferenceImageCallback(LoadReferenceImageCallback cb);
   void setLoadFramebufferAsReferenceImageCallback(LoadFramebufferAsReferenceImageCallback cb);
   void setMatchCallback(MatchCallback cb);
@@ -59,7 +59,7 @@ class PredictionsEditor : public anari_viewer::windows::Window
       const anari::math::float3& up);
   void triggerResetCameraCallback();
   void triggerShowImageCallback(size_t index);
-  void triggerSetActiveMatcherIndexCallback(size_t index);
+  void triggerSetActiveEstimatorIndexCallback(size_t index);
   void triggerLoadReferenceImageCallback(size_t index);
   void triggerLoadFramebufferAsReferenceImageCallback();
   void triggerMatchCallback();
@@ -75,8 +75,8 @@ class PredictionsEditor : public anari_viewer::windows::Window
   ResetCameraCallback m_resetCameraCallback;
   // callback called whenever an image is selected
   ShowImageCallback m_showImageCallback;
-  // callback called whenever a different matcher is selected
-  SetActiveMatcherIndexCallback m_setActiveMatcherIndexCallback;
+  // callback called whenever a different estimator is selected
+  SetActiveEstimatorIndexCallback m_setActiveEstimatorIndexCallback;
   LoadReferenceImageCallback m_loadReferenceImageCallback;
   LoadFramebufferAsReferenceImageCallback m_loadFramebufferAsReferenceImageCallback;
   MatchCallback m_matchCallback;
@@ -86,9 +86,9 @@ class PredictionsEditor : public anari_viewer::windows::Window
   SetMatchThresholdCallback m_setMatchThresholdCallback;
 
   const prediction_container* m_predictions;
-  size_t m_matcherIndex;
-  std::vector<std::string> m_matcherNamesStr;
-  std::vector<const char*> m_matcherNames;
+  size_t m_estimatorIndex;
+  std::vector<std::string> m_estimatorNamesStr;
+  std::vector<const char*> m_estimatorNames;
   size_t m_selectedImage{static_cast<size_t>(-1)};
   std::string m_filename;
   float m_matchThreshold{50.f};
