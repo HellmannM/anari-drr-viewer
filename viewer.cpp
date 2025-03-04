@@ -619,7 +619,7 @@ class Application : public anari_viewer::Application
         m_state.estimators.getActiveEstimator()->set_image(depth3d.data(),
                                                        width,
                                                        height,
-                                                       image_transform_estimator::PIXEL_TYPE::FLOAT3,
+                                                       image_transform_estimator::PIXEL_TYPE::F32X3,
                                                        image_transform_estimator::IMAGE_TYPE::DEPTH3D,
                                                        false /*swizzle*/);
         m_state.estimators.getActiveEstimator()->set_image(fb.data(),
