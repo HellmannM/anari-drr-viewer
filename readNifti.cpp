@@ -28,20 +28,10 @@ bool NiftiReader::open(const char *fileName)
   field.dimX = reader->GetImageIO()->GetDimensions(0);
   field.dimY = reader->GetImageIO()->GetDimensions(1);
   field.dimZ = reader->GetImageIO()->GetDimensions(2);
-  field.spacingX = std::stof(dynamic_cast<const itk::MetaDataObject<std::string>*>
-                    (reader->GetMetaDataDictionary().Get("pixdim[1]"))->GetMetaDataObjectValue());
-  field.spacingY = std::stof(dynamic_cast<const itk::MetaDataObject<std::string>*>
-                    (reader->GetMetaDataDictionary().Get("pixdim[2]"))->GetMetaDataObjectValue());
-  field.spacingZ = std::stof(dynamic_cast<const itk::MetaDataObject<std::string>*>
-                    (reader->GetMetaDataDictionary().Get("pixdim[3]"))->GetMetaDataObjectValue());
+  field.spacingX = reader->GetImageIO()->GetSpacing(0);
+  field.spacingY = reader->GetImageIO()->GetSpacing(1);
+  field.spacingZ = reader->GetImageIO()->GetSpacing(2);
   field.bytesPerCell = sizeof(float);
-  if ((field.spacingX <= 0.f) || (field.spacingY <= 0.f) || (field.spacingZ <= 0.f))
-  {
-    std::cerr << "ERROR: Could not read voxel spacing\n";
-    field.spacingX = 1.f;
-    field.spacingY = 1.f;
-    field.spacingZ = 1.f;
-  }
 
   lacField.dimX = field.dimX;
   lacField.dimY = field.dimY;
