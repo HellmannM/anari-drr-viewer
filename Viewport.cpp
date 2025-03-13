@@ -9,8 +9,10 @@
 // std
 #include <cstring>
 #include <memory>
+#include <chrono>
+#include <thread>
 // stb_image
-#include "stb_image_write.h"
+#include "stb_image/stb_image_write.h"
 
 namespace anari_viewer::windows {
 
@@ -121,6 +123,8 @@ void DRRViewport::buildUI()
     ui_picking();
     ui_handleInput();
   }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void DRRViewport::setWorld(anari::World world, bool resetCameraView)

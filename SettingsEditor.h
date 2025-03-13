@@ -3,12 +3,12 @@
 
 #pragma once
 
-// anari
-#include "anari_viewer/windows/Window.h"
 // std
 #include <functional>
 #include <string>
 #include <vector>
+// ours
+#include "Window.h"
 
 namespace anari_viewer::windows {
 

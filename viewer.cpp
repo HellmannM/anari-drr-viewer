@@ -1,8 +1,6 @@
 // Copyright 2023 Stefan Zellmann, Jefferson Amstutz and Matthias Hellmann
 // SPDX-License-Identifier: Apache-2.0
 
-// anari_viewer
-#include "anari_viewer/Application.h"
 // glm
 #include "glm/gtc/matrix_transform.hpp"
 // visionaray
@@ -19,6 +17,7 @@
 #include <random>
 #include <sstream>
 // ours
+#include "Application.h"
 #include "FieldTypes.h"
 #include "Image.h"
 #include "ImageTransformEstimatorWrapper.h"

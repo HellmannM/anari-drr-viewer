@@ -9,13 +9,13 @@
 #include <GLFW/glfw3.h>
 // anari
 #include <anari/anari_cpp/ext/linalg.h>
-#include "anari_viewer/windows/Window.h"
 // std
 #include <functional>
 #include <string>
 #include <vector>
 // ours
 #include "Image.h"
+#include "Window.h"
 
 namespace anari_viewer::windows {
 

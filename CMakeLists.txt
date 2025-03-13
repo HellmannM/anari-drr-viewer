@@ -2,8 +2,10 @@ set(glm_DIR ${CMAKE_CURRENT_LIST_DIR}/external/glm/lib/cmake/glm)
 find_package(glm REQUIRED)
 mark_as_advanced(glm_DIR)
 
-find_package(anari 0.12.1 REQUIRED COMPONENTS viewer)
+find_package(anari 0.12.1 REQUIRED)
 find_package(visionaray 0.4.2 REQUIRED)
+
+add_subdirectory(3rdparty)
 
 set(SUBPROJECT_NAME anariDRRViewer)
 
@@ -13,17 +15,26 @@ set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 add_executable(${SUBPROJECT_NAME}
+    Application.cpp
     ImageViewport.cpp
     LacTransform.cpp
     ImageTransformEstimatorWrapper.cpp
     PredictionsEditor.cpp
     SettingsEditor.cpp
+    ui_anari.cpp
     Viewport.cpp
     viewer.cpp
+    Window.cpp
 )
-include_directories("${ANARI_DATAROOTDIR}/../../include/anari/backend")
-target_link_libraries(${SUBPROJECT_NAME} glm::glm anari::anari_viewer)
-target_link_libraries(${SUBPROJECT_NAME} visionaray::visionaray_common)
+target_link_libraries(${SUBPROJECT_NAME}
+    glm::glm
+    anari::anari
+    anari::helium
+    anari_viewer_glad
+    anari_viewer_imgui_glfw
+    anari_viewer_stb_image
+    visionaray::visionaray_common
+)
 
 # ITK (nifti loader)
 option(USE_ITK "Support loading Nifti files from ITK" ON)

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "../ui_anari.h"
 // glad
 #include "glad/glad.h"
 // glfw
@@ -11,8 +10,6 @@
 // anari
 #include <anari/anari_cpp/ext/linalg.h>
 #include <anari/anari_cpp.hpp>
-// anari_viewer
-#include "anari_viewer/windows/Window.h"
 // visionaray
 #include <common/input/mouse_event.h>
 #include <common/manip/camera_manipulator.h>
@@ -22,6 +19,9 @@
 #include <array>
 #include <limits>
 #include <memory>
+// ours
+#include "ui_anari.h"
+#include "Window.h"
 
 namespace anari_viewer::windows {
 

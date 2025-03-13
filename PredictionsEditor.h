@@ -3,8 +3,6 @@
 
 #pragma once
 
-// anari
-#include "anari_viewer/windows/Window.h"
 // std
 #include <functional>
 #include <string>
@@ -12,7 +10,9 @@
 // anari
 #include "anari/anari_cpp/ext/linalg.h" // math::float3
 
+// ours
 #include "prediction.h"
+#include "Window.h"
 
 namespace anari_viewer::windows {
 
